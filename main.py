@@ -166,6 +166,28 @@ def clear_query_params():
 
 
 def go_home():
+    reset_prefixes = (
+        "manual_",
+        "curated_",
+        "search_",
+        "ticker_input_",
+        "radio_mode_",
+        "_g_",
+        "_l_",
+    )
+    legacy_keys = {
+        "name1", "name2",
+        "sector1", "sector2",
+        "mu1", "mu2",
+        "sigma1", "sigma2",
+        "e1", "e2",
+        "s1", "s2",
+        "g1", "g2",
+    }
+    for key in list(st.session_state.keys()):
+        if key.startswith(reset_prefixes) or key in legacy_keys:
+            del st.session_state[key]
+
     st.session_state.entered_app = False
     st.session_state.show_profile_builder = False
     st.session_state.setup_mode = None
@@ -193,6 +215,7 @@ def go_home():
     st.session_state.asset2_mode = "curated"
     st.session_state.asset1_ticker = "AAPL"
     st.session_state.asset2_ticker = "MSFT"
+    st.session_state.generated_signature = None
     clear_query_params()
     st.rerun()
 
@@ -419,18 +442,24 @@ def inject_styles():
 
             .hero-brand-row {
                 display: flex;
-                gap: 1rem;
+                gap: 1.05rem;
                 align-items: center;
-                margin: 0.7rem 0 0.9rem;
+                margin: 0.15rem 0 1rem;
+            }
+
+            .hero-brand-copy {
+                display: flex;
+                flex-direction: column;
+                gap: 0.18rem;
             }
 
             .hero-logo {
-                width: 82px;
-                height: 82px;
+                width: 76px;
+                height: 76px;
                 object-fit: contain;
                 filter: drop-shadow(0 10px 20px rgba(31, 88, 58, 0.16));
                 flex-shrink: 0;
-                transform: translateY(-5px);
+                transform: translateY(0);
             }
 
             .hero-kicker,
@@ -443,6 +472,10 @@ def inject_styles():
                 text-transform: uppercase;
                 letter-spacing: 0.12em;
                 color: var(--green-700);
+            }
+
+            .hero-brand-copy .hero-kicker {
+                margin-bottom: 0.1rem;
             }
 
             .hero-kicker::before,
@@ -466,9 +499,9 @@ def inject_styles():
 
             .hero-copy {
                 font-size: 1.05rem;
-                line-height: 1.8;
-                max-width: 56ch;
-                margin: 0 0 1.35rem;
+                line-height: 1.7;
+                max-width: 38ch;
+                margin: 0 0 1.15rem;
             }
 
             .hero-actions {
@@ -514,6 +547,9 @@ def inject_styles():
                 font-size: 0.92rem;
                 color: var(--ink-500);
                 font-weight: 600;
+                max-width: 52ch;
+                margin-top: 1.2rem;
+                line-height: 1.65;
             }
 
             .hero-panel {
@@ -666,7 +702,7 @@ def inject_styles():
 
             .dashboard-title {
                 font-size: 2.2rem;
-                margin: 0.25rem 0 0.45rem;
+                margin: 0;
             }
 
             .dashboard-copy {
@@ -704,7 +740,7 @@ def inject_styles():
 
             .profile-banner {
                 padding: 1.35rem 1.45rem;
-                margin: 0.7rem 0 1.4rem;
+                margin: 0 0 1rem;
             }
 
             .guide-mascot-card {
@@ -946,6 +982,19 @@ def inject_styles():
                 margin-bottom: 0.8rem;
             }
 
+            .projection-card {
+                background: rgba(255, 255, 255, 0.92);
+                border: 1px solid rgba(46, 123, 83, 0.12);
+                border-radius: 22px;
+                padding: 1rem 1.05rem;
+                box-shadow: 0 14px 24px rgba(24, 60, 43, 0.06);
+                margin-top: 1rem;
+            }
+
+            .projection-card h4 {
+                margin: 0.2rem 0 0.55rem;
+            }
+
             @media (max-width: 980px) {
                 .hero-grid {
                     grid-template-columns: 1fr;
@@ -973,8 +1022,8 @@ def inject_styles():
         <style>
             .hero-kicker::before,
             .section-kicker::before {{
-                width: 19px;
-                height: 19px;
+                width: 25px;
+                height: 25px;
                 border-radius: 0;
                 background: url("{LOGO_DATA_URI}") center / contain no-repeat;
             }}
@@ -1424,19 +1473,32 @@ def build_summary_pdf_bytes(
     return buffer.getvalue()
 
 
-def render_investor_charts_section(both_excluded, force_w1, results, a1, a2, invest, title):
+def render_investor_charts_section(both_excluded, force_w1, results, a1, a2, invest, title, summary_pdf_bytes):
     st.write("")
-    st.markdown(
-        f"""
-        <div class="section-kicker">{title}</div>
-        <h3 class="section-title">{title}</h3>
-        <p class="section-copy">
-            These charts highlight the portfolio recommendation and its long-term projection in a cleaner,
-            more presentation-ready format.
-        </p>
-        """,
-        unsafe_allow_html=True,
-    )
+    header_cols = st.columns([1.35, 0.65], gap="large")
+    with header_cols[0]:
+        st.markdown(
+            f"""
+            <div class="section-kicker">{title}</div>
+            <h3 class="section-title">{title}</h3>
+            <p class="section-copy">
+                These charts highlight the portfolio recommendation and its long-term projection in a cleaner,
+                more presentation-ready format.
+            </p>
+            """,
+            unsafe_allow_html=True,
+        )
+    with header_cols[1]:
+        st.write("")
+        st.write("")
+        if summary_pdf_bytes is not None:
+            st.download_button(
+                "Export PDF",
+                data=summary_pdf_bytes,
+                file_name="greenvest-portfolio-summary.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
 
     chart_cols = st.columns(2, gap="large")
     if both_excluded:
@@ -1549,8 +1611,8 @@ def render_asset_card_html(asset: dict) -> str:
             f'<span class="asset-pill">E: {asset["e"]:.0f}</span>',
             f'<span class="asset-pill">S: {asset["s"]:.0f}</span>',
             f'<span class="asset-pill">G: {asset["g"]:.0f}</span>',
-            f'<span class="asset-pill">mu: {asset["mu"] * 100:.1f}%</span>',
-            f'<span class="asset-pill">sigma: {asset["sigma"] * 100:.1f}%</span>',
+            f'<span class="asset-pill">Expected return: {asset["mu"] * 100:.1f}%</span>',
+            f'<span class="asset-pill">Standard deviation: {asset["sigma"] * 100:.1f}%</span>',
         ]
     )
 
@@ -1578,9 +1640,7 @@ def render_asset_card_html(asset: dict) -> str:
     """
 
 
-def render_asset_selector(asset_num: int, excluded_sectors: set):
-    mode_key = f"asset{asset_num}_mode"
-    ticker_key = f"asset{asset_num}_ticker"
+def render_manual_asset_input(asset_num: int, excluded_sectors: set):
     e_w = st.session_state.e_w
     s_w = st.session_state.s_w
     g_w = st.session_state.g_w
@@ -1588,12 +1648,101 @@ def render_asset_selector(asset_num: int, excluded_sectors: set):
     st.markdown(
         f"""
         <div class="section-kicker">Asset {asset_num}</div>
-        <h4 style="margin:0.2rem 0 0.55rem;">Asset {asset_num} — choose or build</h4>
+        <h4 style="margin:0.2rem 0 0.55rem;">Asset {asset_num} — enter your own assumptions</h4>
         """,
         unsafe_allow_html=True,
     )
 
-    mode_options = ["curated", "search", "custom"]
+    columns = st.columns([1.05, 1], gap="large")
+    with columns[0]:
+        name = st.text_input("Name", value=f"Asset {asset_num}", key=f"manual_name_{asset_num}")
+        sector = st.selectbox(
+            "Sector",
+            SECTORS,
+            index=0 if asset_num == 1 else 1,
+            key=f"manual_sector_{asset_num}",
+        )
+        mu = st.number_input(
+            "Expected return (%)",
+            -100.0,
+            500.0,
+            8.0 if asset_num == 1 else 5.0,
+            0.1,
+            key=f"manual_mu_{asset_num}",
+        ) / 100
+        sigma = st.number_input(
+            "Standard deviation (%)",
+            0.01,
+            500.0,
+            15.0 if asset_num == 1 else 10.0,
+            0.1,
+            key=f"manual_sigma_{asset_num}",
+        ) / 100
+
+    with columns[1]:
+        st.caption("ESG pillar scores")
+        e_score = st.slider("Environmental", 0.0, 100.0, 70.0 if asset_num == 1 else 50.0, key=f"manual_e_{asset_num}")
+        s_score = st.slider("Social", 0.0, 100.0, 65.0 if asset_num == 1 else 55.0, key=f"manual_s_{asset_num}")
+        g_score = st.slider("Governance", 0.0, 100.0, 60.0 if asset_num == 1 else 45.0, key=f"manual_g_{asset_num}")
+
+    asset_data = {
+        "name": name,
+        "ticker": "Custom",
+        "sector": sector,
+        "mu": mu,
+        "sigma": sigma,
+        "e": e_score,
+        "s": s_score,
+        "g": g_score,
+        "_live": False,
+        "_source": "custom",
+    }
+
+    esg_composite = composite_esg(asset_data["e"], asset_data["s"], asset_data["g"], e_w, s_w, g_w) / 100
+    is_excluded = asset_data["sector"] in excluded_sectors
+
+    st.markdown(render_asset_card_html(asset_data), unsafe_allow_html=True)
+    st.caption(
+        f"Composite ESG used in the optimiser: {esg_composite * 100:.1f} [{esg_rating(esg_composite)}]"
+    )
+
+    if esg_composite >= 0.60 and asset_data["g"] / 100 < 0.35:
+        st.warning(
+            f"Greenwashing alert: {asset_data['name']} has a strong overall ESG score but weak governance."
+        )
+
+    if is_excluded:
+        st.error(
+            f"{asset_data['name']} sits inside an excluded sector ({asset_data['sector']}), so GreenVest will force its allocation to 0%."
+        )
+
+    return {
+        **asset_data,
+        "esg_c": esg_composite,
+        "esg_a": esg_composite,
+        "is_excluded": is_excluded,
+    }
+
+
+def render_asset_selector(asset_num: int, excluded_sectors: set, allowed_modes=None, filter_excluded_curated=False):
+    mode_key = f"asset{asset_num}_mode"
+    ticker_key = f"asset{asset_num}_ticker"
+    e_w = st.session_state.e_w
+    s_w = st.session_state.s_w
+    g_w = st.session_state.g_w
+    mode_options = allowed_modes or ["curated", "search", "custom"]
+
+    if st.session_state[mode_key] not in mode_options:
+        st.session_state[mode_key] = mode_options[0]
+
+    st.markdown(
+        f"""
+        <div class="section-kicker">Asset {asset_num}</div>
+        <h4 style="margin:0.2rem 0 0.55rem;">Asset {asset_num} — choose an eligible asset</h4>
+        """,
+        unsafe_allow_html=True,
+    )
+
     mode = st.radio(
         "Input method",
         options=mode_options,
@@ -1612,18 +1761,32 @@ def render_asset_selector(asset_num: int, excluded_sectors: set):
     asset_data = None
 
     if mode == "curated":
+        curated_pool = [
+            asset for asset in CURATED_ASSETS
+            if not filter_excluded_curated or asset["sector"] not in excluded_sectors
+        ]
+        if not curated_pool:
+            st.error("No curated assets remain after the exclusion rules. Relax the exclusions or search a different ticker.")
+            return None
+
         default_ticker = st.session_state[ticker_key]
+        available_tickers = {asset["ticker"] for asset in curated_pool}
+        if default_ticker not in available_tickers:
+            default_ticker = curated_pool[0]["ticker"]
+            st.session_state[ticker_key] = default_ticker
+
         default_idx = next(
-            (idx for idx, asset in enumerate(CURATED_ASSETS) if asset["ticker"] == default_ticker),
+            (idx for idx, asset in enumerate(curated_pool) if asset["ticker"] == default_ticker),
             0,
         )
+        curated_names = [f'{asset["name"]} ({asset["ticker"]})' for asset in curated_pool]
         chosen_label = st.selectbox(
             "Select an asset",
-            options=CURATED_NAMES,
+            options=curated_names,
             index=default_idx,
             key=f"curated_sel_{asset_num}",
         )
-        selected_asset = dict(CURATED_ASSETS[CURATED_NAMES.index(chosen_label)])
+        selected_asset = dict(curated_pool[curated_names.index(chosen_label)])
         st.session_state[ticker_key] = selected_asset["ticker"]
         with st.expander("Override ESG scores (optional)", expanded=False):
             st.caption("The curated values are pre-filled. Adjust them only if you have better data.")
@@ -1697,50 +1860,7 @@ def render_asset_selector(asset_num: int, excluded_sectors: set):
                 st.warning(f"GreenVest could not find data for {ticker_input}. Check the ticker or switch to manual entry.")
 
     else:
-        columns = st.columns([1.05, 1], gap="large")
-        with columns[0]:
-            name = st.text_input("Name", value=f"Asset {asset_num}", key=f"manual_name_{asset_num}")
-            sector = st.selectbox(
-                "Sector",
-                SECTORS,
-                index=0 if asset_num == 1 else 1,
-                key=f"manual_sector_{asset_num}",
-            )
-            mu = st.number_input(
-                "Expected return (%)",
-                -100.0,
-                500.0,
-                8.0 if asset_num == 1 else 5.0,
-                0.1,
-                key=f"manual_mu_{asset_num}",
-            ) / 100
-            sigma = st.number_input(
-                "Std deviation (%)",
-                0.01,
-                500.0,
-                15.0 if asset_num == 1 else 10.0,
-                0.1,
-                key=f"manual_sigma_{asset_num}",
-            ) / 100
-
-        with columns[1]:
-            st.caption("ESG pillar scores")
-            e_score = st.slider("Environmental", 0.0, 100.0, 70.0 if asset_num == 1 else 50.0, key=f"manual_e_{asset_num}")
-            s_score = st.slider("Social", 0.0, 100.0, 65.0 if asset_num == 1 else 55.0, key=f"manual_s_{asset_num}")
-            g_score = st.slider("Governance", 0.0, 100.0, 60.0 if asset_num == 1 else 45.0, key=f"manual_g_{asset_num}")
-
-        asset_data = {
-            "name": name,
-            "ticker": "Custom",
-            "sector": sector,
-            "mu": mu,
-            "sigma": sigma,
-            "e": e_score,
-            "s": s_score,
-            "g": g_score,
-            "_live": False,
-            "_source": "custom",
-        }
+        return render_manual_asset_input(asset_num, excluded_sectors)
 
     if asset_data is None:
         return None
@@ -1769,6 +1889,29 @@ def render_asset_selector(asset_num: int, excluded_sectors: set):
         "esg_a": esg_composite,
         "is_excluded": is_excluded,
     }
+
+
+def build_generation_signature(setup_mode, rf, invest, rho, gamma_used, lambda_used, a1, a2):
+    exclusions = tuple(sorted(get_excluded_sectors()))
+    return repr(
+        {
+            "mode": setup_mode,
+            "rf": round(rf, 6),
+            "invest": round(float(invest), 2),
+            "rho": round(rho, 4),
+            "gamma": round(gamma_used, 4),
+            "lambda": round(lambda_used, 4),
+            "exclusions": exclusions,
+            "asset_1": None if a1 is None else {
+                key: a1.get(key)
+                for key in ["name", "ticker", "sector", "mu", "sigma", "e", "s", "g", "is_excluded"]
+            },
+            "asset_2": None if a2 is None else {
+                key: a2.get(key)
+                for key in ["name", "ticker", "sector", "mu", "sigma", "e", "s", "g", "is_excluded"]
+            },
+        }
+    )
 
 
 def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambling, excl_fossil, excl_alcohol):
@@ -1808,21 +1951,25 @@ def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambli
     st.session_state.goal_label = goal_labels[goal]
     st.session_state.onboarding_done = True
     st.session_state.entered_app = True
-    st.session_state.setup_mode = "guided"
+    st.session_state.setup_mode = st.session_state.setup_mode or "guided"
     st.session_state.show_profile_builder = False
     st.session_state.onboarding_step = 1
+    st.session_state.generated_signature = None
     st.rerun()
 
 
+@st.dialog("Investor Preferences", width="large")
 def render_profile_builder(editing=False):
     total_steps = 5
     step = st.session_state.onboarding_step
+    is_manual_mode = st.session_state.setup_mode == "manual"
     heading = "Investor Preference Builder" if not editing else "Update Investor Preferences"
-    body = (
-        "Answer five short questions and GreenVest will shape the portfolio around the investor's goals while you choose the assets below."
-        if not editing
-        else "Adjust the profile inline and the recommendation will refresh with the new sustainability preferences."
-    )
+    if editing:
+        body = "Adjust the profile inline and then click generate again to refresh the portfolio."
+    elif is_manual_mode:
+        body = "Set the investor preferences first, then enter your own expected returns, risk, and ESG assumptions."
+    else:
+        body = "Complete the investor profile first, then choose eligible assets and generate the portfolio."
 
     st.markdown(
         f"""
@@ -2017,15 +2164,16 @@ def render_landing_page():
         <section class="hero-shell">
             <div class="hero-grid">
                 <div class="hero-main">
-                    <div class="hero-kicker">Welcome to GreenVest</div>
                     <div class="hero-brand-row">
                         <img class="hero-logo" src="{LOGO_DATA_URI}" alt="GreenVest logo">
-                        <h1 class="hero-title">GreenVest</h1>
+                        <div class="hero-brand-copy">
+                            <div class="hero-kicker">Welcome to GreenVest</div>
+                            <h1 class="hero-title">GreenVest</h1>
+                        </div>
                     </div>
                     <p class="hero-copy">
-                        Sustainable investing should feel clear, modern, and reassuring.
-                        GreenVest helps investors compare return, risk, and ESG quality without
-                        forcing them through a cluttered workflow.
+                        Sustainable investing, made clearer.
+                        GreenVest brings return, risk, and ESG into one clean view.
                     </p>
                     <div class="hero-actions">
                         <form class="hero-action-form" method="get" target="_self">
@@ -2072,8 +2220,8 @@ def render_landing_page():
         """
         <div class="fact-grid">
             <div class="fact-card">
-                <div class="section-kicker">What it is?</div>
-                <h4>What is sustainable investing?</h4>
+                <div class="section-kicker">What It Is</div>
+                <h4>What sustainable investing means</h4>
                 <p>
                     Sustainable investing looks at financial return alongside environmental, social,
                     and governance performance. Instead of asking only "what could this earn?",
@@ -2081,8 +2229,8 @@ def render_landing_page():
                 </p>
             </div>
             <div class="fact-card">
-                <div class="section-kicker">Why it matters?</div>
-                <h4>Why does it matter?</h4>
+                <div class="section-kicker">Why It Matters</div>
+                <h4>Why it matters</h4>
                 <p>
                     Investors often use sustainable strategies to align with their values, manage long-run
                     regulatory and reputational risk, and back companies that may be better positioned for
@@ -2145,6 +2293,7 @@ def initialize_session_state():
         "asset2_mode": "curated",
         "asset1_ticker": "AAPL",
         "asset2_ticker": "MSFT",
+        "generated_signature": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -2155,11 +2304,11 @@ def handle_entry_actions():
     action = get_query_param("launch")
     if action == "manual":
         st.session_state.entered_app = True
-        st.session_state.onboarding_done = True
+        st.session_state.onboarding_done = False
         st.session_state.setup_mode = "manual"
-        st.session_state.profile = "Self-directed"
-        st.session_state.goal_label = "Custom portfolio"
-        st.session_state.show_profile_builder = False
+        st.session_state.show_profile_builder = True
+        st.session_state.onboarding_step = 1
+        st.session_state.generated_signature = None
         clear_query_params()
         st.rerun()
 
@@ -2168,35 +2317,34 @@ def handle_entry_actions():
         st.session_state.show_profile_builder = True
         st.session_state.setup_mode = "guided"
         st.session_state.onboarding_step = 1
+        st.session_state.onboarding_done = False
+        st.session_state.generated_signature = None
         clear_query_params()
         st.rerun()
 
 
 def render_dashboard():
+    setup_mode = st.session_state.setup_mode or "manual"
+    is_manual_mode = setup_mode == "manual"
     gamma_used = st.session_state.gamma_val
     lambda_used = st.session_state.lambda_val
     e_w = st.session_state.e_w
     s_w = st.session_state.s_w
     g_w = st.session_state.g_w
-    show_charts_first = st.session_state.setup_mode in {"manual", "guided"}
+    mode_title = "Create your sustainable portfolio" if is_manual_mode else "Generate a portfolio from investor preferences"
+    mode_copy = (
+        "Enter your own expected returns, standard deviations, and ESG assumptions, then click generate."
+        if is_manual_mode
+        else "Choose eligible assets, then click generate to turn the investor profile into a recommended portfolio."
+    )
 
     st.markdown(
         f"""
         <section class="dashboard-hero">
             <div class="dashboard-head">
                 <div>
-                    <div class="section-kicker">Investor workspace</div>
-                    <h2 class="dashboard-title">Build a clearer sustainable portfolio</h2>
-                    <p class="dashboard-copy">
-                        The dashboard now flows from portfolio inputs to recommendation to visuals in a single pass,
-                        so investors can follow the story without bouncing between tabs.
-                    </p>
-                    <div class="chip-row">
-                        <span class="chip">{st.session_state.profile}</span>
-                        <span class="chip blue">Goal: {st.session_state.goal_label}</span>
-                        <span class="chip">gamma = {gamma_used}</span>
-                        <span class="chip">lambda = {lambda_used}</span>
-                    </div>
+                    <h2 class="dashboard-title">{mode_title}</h2>
+                    <p class="dashboard-copy">{mode_copy}</p>
                 </div>
             </div>
         </section>
@@ -2204,9 +2352,9 @@ def render_dashboard():
         unsafe_allow_html=True,
     )
 
-    top_actions = st.columns([1.05, 1.2, 1.05])
+    top_actions = st.columns([1, 1, 1], gap="large")
     with top_actions[0]:
-        if st.button("Go Home"):
+        if st.button("Go Back Home"):
             go_home()
     with top_actions[2]:
         if st.button("Update Preferences"):
@@ -2216,21 +2364,27 @@ def render_dashboard():
 
     if st.session_state.show_profile_builder:
         render_profile_builder(editing=st.session_state.onboarding_done)
-        st.write("")
 
-    charts_slot = st.container() if show_charts_first else None
-
+    charts_slot = st.container()
     builder_col, insight_col = st.columns([1.08, 0.92], gap="large")
 
+    current_signature = None
+    a1 = None
+    a2 = None
+    projection_slot = None
+
     with builder_col:
+        builder_heading = "Enter your asset assumptions" if is_manual_mode else "Choose the assets to compare"
+        builder_copy = (
+            "This path is for investors who want to enter their own expected returns, risk levels, and ESG inputs."
+            if is_manual_mode
+            else "This path uses the investor profile to guide the optimisation while you choose from eligible assets."
+        )
         st.markdown(
-            """
+            f"""
             <div class="section-kicker">Portfolio builder</div>
-            <h3 class="section-title">Shape the assets and market assumptions</h3>
-            <p class="section-copy">
-                Pick from the curated asset library, search a real ticker, or enter a custom asset manually.
-                The recommendation refreshes immediately in the panel beside it.
-            </p>
+            <h3 class="section-title">{builder_heading}</h3>
+            <p class="section-copy">{builder_copy}</p>
             """,
             unsafe_allow_html=True,
         )
@@ -2323,9 +2477,14 @@ def render_dashboard():
         )
 
         excluded_sectors = get_excluded_sectors()
-        a1 = render_asset_selector(1, excluded_sectors)
-        st.write("")
-        a2 = render_asset_selector(2, excluded_sectors)
+        if is_manual_mode:
+            a1 = render_manual_asset_input(1, excluded_sectors)
+            st.write("")
+            a2 = render_manual_asset_input(2, excluded_sectors)
+        else:
+            a1 = render_asset_selector(1, excluded_sectors, allowed_modes=["curated", "search"], filter_excluded_curated=True)
+            st.write("")
+            a2 = render_asset_selector(2, excluded_sectors, allowed_modes=["curated", "search"], filter_excluded_curated=True)
 
         st.write("")
         rho = st.slider(
@@ -2337,32 +2496,101 @@ def render_dashboard():
             help="-1 means the assets move opposite to each other. 1 means they move together.",
         )
 
+        if a1 is not None and a2 is not None:
+            current_signature = build_generation_signature(
+                setup_mode,
+                rf,
+                invest,
+                rho,
+                gamma_used,
+                lambda_used,
+                a1,
+                a2,
+            )
+
+        generate_disabled = not st.session_state.onboarding_done or a1 is None or a2 is None
+        if st.button("Generate Portfolio", use_container_width=True, disabled=generate_disabled):
+            st.session_state.generated_signature = current_signature
+            st.rerun()
+
+        if not st.session_state.onboarding_done:
+            st.info("Complete the investor preferences popup first, then generate the portfolio.")
+        elif a1 is None or a2 is None:
+            st.info("Complete both asset sections to unlock the portfolio recommendation.")
+        elif st.session_state.generated_signature != current_signature:
+            st.info("Click Generate Portfolio to show the latest recommendation, projection, and charts.")
+
+        projection_slot = st.container()
+
     if a1 is None or a2 is None:
-        if show_charts_first and charts_slot is not None:
-            with charts_slot:
-                st.markdown(
-                    """
-                    <div class="section-kicker">Investor Charts</div>
-                    <h3 class="section-title">Investor Charts</h3>
-                    <p class="section-copy">
-                        Complete both asset selections to unlock the visual comparison and projection view.
-                    </p>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                st.info("Choose two assets first, then GreenVest will generate the charts and recommendation.")
-        with insight_col:
+        with charts_slot:
             st.markdown(
                 """
-                <div class="section-kicker">GreenVest recommendation</div>
-                <h3 class="section-title">Read the portfolio as a story, not a spreadsheet</h3>
+                <div class="section-kicker">Investor Charts</div>
+                <h3 class="section-title">Investor Charts</h3>
                 <p class="section-copy">
-                    Complete both asset selections to see the recommendation, projected growth, and export summary.
+                    Complete both asset selections to unlock the ESG efficient frontier and future value view.
                 </p>
                 """,
                 unsafe_allow_html=True,
             )
-            st.info("Pick or search for two assets to generate the investor-facing recommendation.")
+            st.info("Choose two assets first, then click generate to display the charts and recommendation.")
+        with insight_col:
+            st.markdown(
+                """
+                <div class="section-kicker">Portfolio recommendation</div>
+                <h3 class="section-title">Portfolio output</h3>
+                <p class="section-copy">
+                    The portfolio recommendation appears here after the investor preferences are complete and both assets have been entered.
+                </p>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.expander("How GreenVest scores ESG", expanded=False):
+                st.markdown(
+                    """
+                    1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
+                    2. Those pillar scores are combined into one composite ESG score using the investor's own E, S, and G priority weights.
+                    3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`.
+                    4. Sector exclusions are enforced so blocked sectors cannot be recommended.
+                    """
+                )
+        return
+
+    generated = st.session_state.generated_signature == current_signature
+    if not generated:
+        with charts_slot:
+            st.markdown(
+                """
+                <div class="section-kicker">Investor Charts</div>
+                <h3 class="section-title">Investor Charts</h3>
+                <p class="section-copy">
+                    Click generate to show the ESG efficient frontier, future value chart, and export button.
+                </p>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.info("The charts appear after the investor clicks Generate Portfolio.")
+        with insight_col:
+            st.markdown(
+                """
+                <div class="section-kicker">Portfolio recommendation</div>
+                <h3 class="section-title">Portfolio output</h3>
+                <p class="section-copy">
+                    The recommendation, metrics, and narrative appear here after generation.
+                </p>
+                """,
+                unsafe_allow_html=True,
+            )
+            with st.expander("How GreenVest scores ESG", expanded=False):
+                st.markdown(
+                    """
+                    1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
+                    2. Those pillar scores are combined into one composite ESG score using the investor's own E, S, and G priority weights.
+                    3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`.
+                    4. Sector exclusions are enforced so blocked sectors cannot be recommended.
+                    """
+                )
         return
 
     both_excluded = a1["is_excluded"] and a2["is_excluded"]
@@ -2374,16 +2602,12 @@ def render_dashboard():
 
     results = {}
     summary_pdf_bytes = None
+    benchmark_message_kind = "info"
+    benchmark_message_text = ""
+    checkpoint_df = pd.DataFrame()
+
     if not both_excluded:
-        (
-            weights,
-            mu_grid,
-            sigma_grid,
-            esg_grid,
-            utility_grid,
-            esg_adjusted_grid,
-            idx,
-        ) = optimise(
+        weights, mu_grid, sigma_grid, esg_grid, utility_grid, esg_adjusted_grid, idx = optimise(
             a1["mu"],
             a2["mu"],
             a1["sigma"],
@@ -2458,6 +2682,7 @@ def render_dashboard():
             "esg_adjusted_ms": esg_adjusted_ms,
             "mu_50": mu_50,
         }
+
         summary_pdf_bytes = build_summary_pdf_bytes(
             a1,
             a2,
@@ -2473,8 +2698,47 @@ def render_dashboard():
             ", ".join(excluded_sector_labels()),
         )
 
-    if show_charts_first and charts_slot is not None:
-        with charts_slot:
+        checkpoint_years = [5, 10, 20, 30]
+        checkpoint_df = pd.DataFrame(
+            {
+                "Horizon": [f"{year} years" for year in checkpoint_years],
+                "GreenVest": [f"GBP {future_value(invest, results['mu_opt'], year):,.0f}" for year in checkpoint_years],
+            }
+        )
+        if results["benchmark_return"] is not None:
+            checkpoint_df["50 / 50"] = [
+                f"GBP {future_value(invest, results['benchmark_return'], year):,.0f}" for year in checkpoint_years
+            ]
+            recommendation_30 = future_value(invest, results["mu_opt"], 30)
+            benchmark_30 = future_value(invest, results["benchmark_return"], 30)
+            if recommendation_30 > benchmark_30:
+                benchmark_message_kind = "success"
+                benchmark_message_text = (
+                    f"GreenVest is projected to outperform the 50 / 50 reference by GBP {recommendation_30 - benchmark_30:,.0f} over 30 years."
+                )
+            elif benchmark_30 > recommendation_30:
+                benchmark_message_kind = "info"
+                benchmark_message_text = (
+                    f"The 50 / 50 reference projects GBP {benchmark_30 - recommendation_30:,.0f} more over 30 years under the current assumptions."
+                )
+            else:
+                benchmark_message_kind = "info"
+                benchmark_message_text = "GreenVest and the 50 / 50 reference project the same 30-year value under the current assumptions."
+
+    with charts_slot:
+        if both_excluded:
+            st.markdown(
+                """
+                <div class="section-kicker">Investor Charts</div>
+                <h3 class="section-title">Investor Charts</h3>
+                <p class="section-copy">
+                    The chart area is ready, but both selected assets are blocked by the current sector exclusions.
+                </p>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.error("Both selected assets are excluded, so GreenVest cannot generate the ESG efficient frontier.")
+        else:
             render_investor_charts_section(
                 both_excluded,
                 force_w1,
@@ -2483,34 +2747,46 @@ def render_dashboard():
                 a2,
                 invest,
                 "Investor Charts",
+                summary_pdf_bytes,
             )
+
+    with projection_slot:
+        if both_excluded:
+            st.markdown(
+                """
+                <div class="projection-card">
+                    <div class="section-kicker">Projection</div>
+                    <h4>Projection checkpoints</h4>
+                    <p class="section-copy">Projection values will appear here once at least one selected asset is eligible for recommendation.</p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                """
+                <div class="projection-card">
+                    <div class="section-kicker">Projection</div>
+                    <h4>Projection checkpoints</h4>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if benchmark_message_text:
+                if benchmark_message_kind == "success":
+                    st.success(benchmark_message_text)
+                else:
+                    st.info(benchmark_message_text)
+            st.dataframe(checkpoint_df, use_container_width=True, hide_index=True)
 
     with insight_col:
         st.markdown(
             """
-            <div class="section-kicker">GreenVest recommendation</div>
-            <h3 class="section-title">Read the portfolio as a story, not a spreadsheet</h3>
+            <div class="section-kicker">Portfolio recommendation</div>
+            <h3 class="section-title">Portfolio output</h3>
             <p class="section-copy">
-                The panel below summarises the recommended mix, why it fits the investor, and how
-                the return, risk, and ESG trade-off lands under the current assumptions.
+                The recommendation below explains the mix, the core metrics, and the sustainability trade-off.
             </p>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        excluded_text = ", ".join(excluded_sector_labels())
-        st.markdown(
-            f"""
-            <div class="spotlight-card">
-                <div class="section-kicker">Investor profile</div>
-                <h3>{st.session_state.profile} outlook with {st.session_state.goal_label.lower()} in mind</h3>
-                <p>
-                    Current profile inputs set gamma to <strong>{gamma_used:.1f}</strong> and lambda to
-                    <strong>{lambda_used:.3f}</strong>. Environmental, social, and governance priorities are
-                    weighted <strong>{e_w}/5</strong>, <strong>{s_w}/5</strong>, and <strong>{g_w}/5</strong>.
-                    Excluded sectors: <strong>{excluded_text}</strong>.
-                </p>
-            </div>
             """,
             unsafe_allow_html=True,
         )
@@ -2518,125 +2794,75 @@ def render_dashboard():
         with st.expander("How GreenVest scores ESG", expanded=False):
             st.markdown(
                 """
-                1. GreenVest starts with the environmental, social, and governance sub-scores you enter for each asset.
+                1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
                 2. Those pillar scores are combined into one composite ESG score using the investor's own E, S, and G priority weights.
-                3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`, so return, risk, and sustainability all matter at the same time.
-                4. GreenVest also enforces sector exclusions and raises a greenwashing warning when the overall ESG score looks strong but governance is weak.
+                3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`.
+                4. Sector exclusions are enforced so blocked sectors cannot be recommended.
                 """
             )
 
         if both_excluded:
             st.error(
-                "Both assets sit inside excluded sectors. Update the exclusions or change the asset sectors to restore a valid portfolio."
+                "Both selected assets sit inside excluded sectors. Update the exclusions or choose different assets."
+            )
+            return
+
+        high_esg_asset = a1["name"] if a1["esg_a"] >= a2["esg_a"] else a2["name"]
+        high_return_asset = a1["name"] if a1["mu"] >= a2["mu"] else a2["name"]
+        gamma_desc = (
+            "high risk aversion" if gamma_used >= 7 else "moderate risk aversion" if gamma_used >= 4 else "lower risk aversion"
+        )
+        lambda_desc = (
+            "strong sustainability preference"
+            if lambda_used >= 0.12
+            else "balanced sustainability preference"
+            if lambda_used >= 0.06
+            else "lighter sustainability preference"
+        )
+
+        st.markdown(
+            f"""
+            <div class="spotlight-card">
+                <div class="section-kicker">Recommended mix</div>
+                <h3>{a1["name"]}: {results["w1"] * 100:.1f}% | {a2["name"]}: {results["w2"] * 100:.1f}%</h3>
+                <p>
+                    GreenVest leans toward <strong>{high_esg_asset}</strong> for sustainability strength while
+                    preserving return support from <strong>{high_return_asset}</strong>. With
+                    <strong>{gamma_desc}</strong> and a <strong>{lambda_desc}</strong>, the optimiser searches for a cleaner balance between return, risk, and ESG quality.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        metric_row_1 = st.columns(2)
+        metric_row_1[0].metric("Expected return", f"{results['mu_opt'] * 100:.2f}%")
+        metric_row_1[1].metric("Portfolio risk", f"{results['sigma_opt'] * 100:.2f}%")
+
+        metric_row_2 = st.columns(2)
+        metric_row_2[0].metric("Sharpe ratio", f"{results['sharpe_opt']:.3f}")
+        metric_row_2[1].metric("ESG score", f"{results['esg_opt'] * 100:.1f} / 100")
+
+        metric_row_3 = st.columns(2)
+        metric_row_3[0].metric("ESG-adjusted Sharpe", f"{results['esg_sharpe_opt']:.3f}")
+        metric_row_3[1].metric("Impact score", f"{results['impact_score']:.1f}")
+
+        metric_row_4 = st.columns(2)
+        metric_row_4[0].metric("Trade-off score", f"{results['tradeoff']:.4f}")
+        metric_row_4[1].metric("Utility value", f"{results['utility_opt']:.5f}")
+
+        if force_w1 is not None:
+            excluded_name = a1["name"] if a1["is_excluded"] else a2["name"]
+            remaining_name = a2["name"] if a1["is_excluded"] else a1["name"]
+            st.warning(
+                f"Hard exclusion applied: {excluded_name} is blocked by the investor rules, so the portfolio moves fully into {remaining_name}."
+            )
+        elif results["ret_cost"] > 0.5:
+            st.info(
+                f"Compared with a purely financial benchmark, this sustainable tilt gives up about {results['ret_cost']:.2f}% of expected return."
             )
         else:
-            high_esg_asset = a1["name"] if a1["esg_a"] >= a2["esg_a"] else a2["name"]
-            high_return_asset = a1["name"] if a1["mu"] >= a2["mu"] else a2["name"]
-            gamma_desc = (
-                "high risk aversion" if gamma_used >= 7 else "moderate risk aversion" if gamma_used >= 4 else "lower risk aversion"
-            )
-            lambda_desc = (
-                "strong sustainability preference"
-                if lambda_used >= 0.12
-                else "balanced sustainability preference"
-                if lambda_used >= 0.06
-                else "lighter sustainability preference"
-            )
-
-            st.markdown(
-                f"""
-                <div class="spotlight-card">
-                    <div class="section-kicker">Recommended mix</div>
-                    <h3>{a1["name"]}: {results["w1"] * 100:.1f}% | {a2["name"]}: {results["w2"] * 100:.1f}%</h3>
-                    <p>
-                        GreenVest leans toward <strong>{high_esg_asset}</strong> for sustainability strength while
-                        preserving return support from <strong>{high_return_asset}</strong>. With
-                        <strong>{gamma_desc}</strong> and a <strong>{lambda_desc}</strong>, the optimiser is searching
-                        for the mix that respects both financial and ESG preferences without cluttering the story.
-                    </p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            metric_row_1 = st.columns(2)
-            metric_row_1[0].metric("Expected return", f"{results['mu_opt'] * 100:.2f}%")
-            metric_row_1[1].metric("Portfolio risk", f"{results['sigma_opt'] * 100:.2f}%")
-
-            metric_row_2 = st.columns(2)
-            metric_row_2[0].metric("Sharpe ratio", f"{results['sharpe_opt']:.3f}")
-            metric_row_2[1].metric("ESG score", f"{results['esg_opt'] * 100:.1f} / 100")
-
-            metric_row_3 = st.columns(2)
-            metric_row_3[0].metric("ESG-adjusted Sharpe", f"{results['esg_sharpe_opt']:.3f}")
-            metric_row_3[1].metric("Impact score", f"{results['impact_score']:.1f}")
-
-            metric_row_4 = st.columns(2)
-            metric_row_4[0].metric("Trade-off score", f"{results['tradeoff']:.4f}")
-            metric_row_4[1].metric("Utility value", f"{results['utility_opt']:.5f}")
-
-            if force_w1 is not None:
-                excluded_name = a1["name"] if a1["is_excluded"] else a2["name"]
-                remaining_name = a2["name"] if a1["is_excluded"] else a1["name"]
-                st.warning(
-                    f"Hard exclusion applied: {excluded_name} is blocked by the investor rules, so the portfolio moves fully into {remaining_name}."
-                )
-            elif results["ret_cost"] > 0.5:
-                st.info(
-                    f"Compared with a purely financial benchmark, this sustainable tilt gives up about {results['ret_cost']:.2f}% of expected return."
-                )
-            else:
-                st.success("The current sustainable preference set does not create a meaningful return penalty in this two-asset setup.")
-
-            checkpoint_years = [5, 10, 20, 30]
-            checkpoint_df = pd.DataFrame(
-                {
-                    "Horizon": [f"{year} years" for year in checkpoint_years],
-                    "GreenVest": [f"GBP {future_value(invest, results['mu_opt'], year):,.0f}" for year in checkpoint_years],
-                }
-            )
-            if results["benchmark_return"] is not None:
-                checkpoint_df["50 / 50"] = [
-                    f"GBP {future_value(invest, results['benchmark_return'], year):,.0f}" for year in checkpoint_years
-                ]
-
-            if results["benchmark_return"] is not None:
-                recommendation_30 = future_value(invest, results["mu_opt"], 30)
-                benchmark_30 = future_value(invest, results["benchmark_return"], 30)
-                if recommendation_30 > benchmark_30:
-                    st.success(
-                        f"Based on the current assumptions, our recommendation is projected to outperform the 50 / 50 reference by GBP {recommendation_30 - benchmark_30:,.0f} over 30 years."
-                    )
-                elif benchmark_30 > recommendation_30:
-                    st.info(
-                        f"Based on the current assumptions, the 50 / 50 reference projects GBP {benchmark_30 - recommendation_30:,.0f} more over 30 years, so a balanced split may be the stronger fit."
-                    )
-                else:
-                    st.info("Based on the current assumptions, the recommendation and the 50 / 50 reference project the same long-run value.")
-
-            with st.expander("Projection checkpoints", expanded=False):
-                st.dataframe(checkpoint_df, use_container_width=True, hide_index=True)
-
-            with st.expander("Export for meetings and submissions", expanded=False):
-                st.write("Download a one-page PDF summary of the current recommendation.")
-                st.download_button(
-                    "Download one-page PDF summary",
-                    data=summary_pdf_bytes,
-                    file_name="greenvest-portfolio-summary.pdf",
-                    mime="application/pdf",
-                    use_container_width=True,
-                )
-
-    if not show_charts_first:
-        render_investor_charts_section(
-            both_excluded,
-            force_w1,
-            results,
-            a1,
-            a2,
-            invest,
-            "Investor Charts",
-        )
+            st.success("The current sustainable preference set does not create a meaningful return penalty in this two-asset setup.")
 
 
 initialize_session_state()
@@ -2649,9 +2875,6 @@ if not st.session_state.loader_complete:
 
 if not st.session_state.entered_app:
     render_landing_page()
-    if st.session_state.show_profile_builder:
-        st.write("")
-        render_profile_builder(editing=False)
     st.stop()
 
 
