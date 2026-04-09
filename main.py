@@ -85,8 +85,45 @@ REVIEWS = [
     },
 ]
 
+CURATED_ASSETS = [
+    {"name": "Apple", "ticker": "AAPL", "sector": "Technology", "mu": 0.162, "sigma": 0.248, "e": 82, "s": 74, "g": 78},
+    {"name": "Microsoft", "ticker": "MSFT", "sector": "Technology", "mu": 0.148, "sigma": 0.225, "e": 79, "s": 80, "g": 85},
+    {"name": "NVIDIA", "ticker": "NVDA", "sector": "Technology", "mu": 0.310, "sigma": 0.510, "e": 64, "s": 68, "g": 72},
+    {"name": "Alphabet", "ticker": "GOOGL", "sector": "Technology", "mu": 0.138, "sigma": 0.230, "e": 71, "s": 65, "g": 69},
+    {"name": "Meta", "ticker": "META", "sector": "Technology", "mu": 0.175, "sigma": 0.350, "e": 55, "s": 48, "g": 52},
+    {"name": "Samsung", "ticker": "005930.KS", "sector": "Technology", "mu": 0.080, "sigma": 0.280, "e": 68, "s": 62, "g": 65},
+    {"name": "Johnson & Johnson", "ticker": "JNJ", "sector": "Healthcare", "mu": 0.072, "sigma": 0.145, "e": 70, "s": 75, "g": 77},
+    {"name": "GSK", "ticker": "GSK", "sector": "Healthcare", "mu": 0.065, "sigma": 0.180, "e": 66, "s": 72, "g": 68},
+    {"name": "AstraZeneca", "ticker": "AZN", "sector": "Healthcare", "mu": 0.095, "sigma": 0.195, "e": 74, "s": 78, "g": 76},
+    {"name": "Novo Nordisk", "ticker": "NVO", "sector": "Healthcare", "mu": 0.185, "sigma": 0.290, "e": 80, "s": 82, "g": 83},
+    {"name": "JPMorgan Chase", "ticker": "JPM", "sector": "Financial Services", "mu": 0.110, "sigma": 0.220, "e": 54, "s": 62, "g": 70},
+    {"name": "HSBC", "ticker": "HSBC", "sector": "Financial Services", "mu": 0.082, "sigma": 0.195, "e": 58, "s": 60, "g": 65},
+    {"name": "BlackRock", "ticker": "BLK", "sector": "Financial Services", "mu": 0.118, "sigma": 0.230, "e": 65, "s": 67, "g": 74},
+    {"name": "Unilever", "ticker": "UL", "sector": "Consumer Goods", "mu": 0.060, "sigma": 0.155, "e": 84, "s": 80, "g": 78},
+    {"name": "Nestle", "ticker": "NSRGY", "sector": "Consumer Goods", "mu": 0.058, "sigma": 0.148, "e": 72, "s": 70, "g": 74},
+    {"name": "Tesla", "ticker": "TSLA", "sector": "Clean Energy", "mu": 0.220, "sigma": 0.580, "e": 85, "s": 52, "g": 48},
+    {"name": "Vestas Wind", "ticker": "VWDRY", "sector": "Clean Energy", "mu": 0.090, "sigma": 0.310, "e": 91, "s": 78, "g": 80},
+    {"name": "Orsted", "ticker": "DNNGY", "sector": "Clean Energy", "mu": 0.075, "sigma": 0.280, "e": 93, "s": 76, "g": 79},
+    {"name": "Siemens", "ticker": "SIEGY", "sector": "Industrials", "mu": 0.098, "sigma": 0.215, "e": 76, "s": 73, "g": 77},
+    {"name": "Schneider Electric", "ticker": "SBGSY", "sector": "Industrials", "mu": 0.112, "sigma": 0.225, "e": 88, "s": 80, "g": 82},
+    {"name": "Shell", "ticker": "SHEL", "sector": "Fossil Fuels / Energy", "mu": 0.095, "sigma": 0.240, "e": 38, "s": 50, "g": 58},
+    {"name": "BP", "ticker": "BP", "sector": "Fossil Fuels / Energy", "mu": 0.088, "sigma": 0.235, "e": 34, "s": 48, "g": 55},
+    {"name": "ExxonMobil", "ticker": "XOM", "sector": "Fossil Fuels / Energy", "mu": 0.100, "sigma": 0.250, "e": 30, "s": 45, "g": 52},
+    {"name": "Prologis", "ticker": "PLD", "sector": "Real Estate", "mu": 0.092, "sigma": 0.200, "e": 72, "s": 68, "g": 73},
+    {"name": "British American Tobacco", "ticker": "BTI", "sector": "Tobacco", "mu": 0.055, "sigma": 0.175, "e": 28, "s": 32, "g": 55},
+    {"name": "Diageo", "ticker": "DEO", "sector": "Alcohol", "mu": 0.068, "sigma": 0.170, "e": 65, "s": 60, "g": 70},
+    {"name": "Flutter Entertainment", "ticker": "FLTR.L", "sector": "Gambling", "mu": 0.078, "sigma": 0.290, "e": 40, "s": 45, "g": 58},
+    {"name": "BAE Systems", "ticker": "BAESY", "sector": "Weapons / Defence", "mu": 0.120, "sigma": 0.230, "e": 35, "s": 55, "g": 62},
+    {"name": "Lockheed Martin", "ticker": "LMT", "sector": "Weapons / Defence", "mu": 0.108, "sigma": 0.195, "e": 32, "s": 52, "g": 60},
+]
+
+CURATED_BY_TICKER = {asset["ticker"]: asset for asset in CURATED_ASSETS}
+CURATED_NAMES = [f'{asset["name"]} ({asset["ticker"]})' for asset in CURATED_ASSETS]
+
 
 def image_to_data_uri(path: Path, make_transparent=False) -> str:
+    if not path.exists():
+        return ""
     if make_transparent:
         image = Image.open(path).convert("RGBA")
         pixels = np.array(image)
@@ -126,6 +163,114 @@ def clear_query_params():
         st.query_params.clear()
     except Exception:
         st.experimental_set_query_params()
+
+
+def go_home():
+    st.session_state.entered_app = False
+    st.session_state.show_profile_builder = False
+    st.session_state.setup_mode = None
+    st.session_state.onboarding_done = False
+    st.session_state.onboarding_step = 1
+    st.session_state.q1 = 3
+    st.session_state.q2 = 3
+    st.session_state.q3 = 3
+    st.session_state.goal = 2
+    st.session_state.e_w = 3
+    st.session_state.s_w = 3
+    st.session_state.g_w = 3
+    st.session_state.excl_tobacco = False
+    st.session_state.excl_weapons = False
+    st.session_state.excl_gambling = False
+    st.session_state.excl_fossil = False
+    st.session_state.excl_alcohol = False
+    st.session_state.gamma = 4.0
+    st.session_state.gamma_val = 4.0
+    st.session_state.lambda_esg = 0.06
+    st.session_state.lambda_val = 0.06
+    st.session_state.profile = "Balanced"
+    st.session_state.goal_label = "Long-term growth"
+    st.session_state.asset1_mode = "curated"
+    st.session_state.asset2_mode = "curated"
+    st.session_state.asset1_ticker = "AAPL"
+    st.session_state.asset2_ticker = "MSFT"
+    clear_query_params()
+    st.rerun()
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_live_asset(ticker: str):
+    try:
+        import yfinance as yf
+
+        instrument = yf.Ticker(ticker.upper())
+        info = instrument.info or {}
+
+        history = instrument.history(period="5y", interval="1mo")
+        if history.empty or len(history) < 12:
+            return None
+
+        monthly_returns = history["Close"].pct_change().dropna()
+        mu = float(monthly_returns.mean() * 12)
+        sigma = float(monthly_returns.std() * np.sqrt(12))
+
+        sustainability = instrument.sustainability
+        e_score = 50.0
+        s_score = 50.0
+        g_score = 50.0
+        if sustainability is not None and not sustainability.empty:
+            def get_score(key, default=50.0):
+                try:
+                    value = sustainability.loc[key].values[0] if key in sustainability.index else default
+                    return float(value) * 10 if float(value) <= 10 else float(value)
+                except Exception:
+                    return default
+
+            e_score = get_score("environmentScore")
+            s_score = get_score("socialScore")
+            g_score = get_score("governanceScore")
+
+        return {
+            "name": info.get("shortName") or info.get("longName") or ticker.upper(),
+            "ticker": ticker.upper(),
+            "sector": map_sector(info.get("sector", "")),
+            "mu": round(mu, 4),
+            "sigma": round(sigma, 4),
+            "e": round(e_score, 1),
+            "s": round(s_score, 1),
+            "g": round(g_score, 1),
+            "_live": True,
+            "_price": info.get("regularMarketPrice") or info.get("currentPrice"),
+        }
+    except Exception:
+        return None
+
+
+def map_sector(raw_sector: str) -> str:
+    mapping = {
+        "Technology": "Technology",
+        "Consumer Cyclical": "Consumer Goods",
+        "Consumer Defensive": "Consumer Goods",
+        "Healthcare": "Healthcare",
+        "Financial Services": "Financial Services",
+        "Industrials": "Industrials",
+        "Energy": "Fossil Fuels / Energy",
+        "Real Estate": "Real Estate",
+        "Communication Services": "Technology",
+        "Basic Materials": "Industrials",
+        "Utilities": "Clean Energy",
+    }
+    return mapping.get(raw_sector, "Technology")
+
+
+def resolve_asset(ticker: str):
+    live_asset = fetch_live_asset(ticker)
+    if live_asset:
+        return live_asset
+
+    curated_asset = CURATED_BY_TICKER.get(ticker.upper())
+    if curated_asset:
+        return dict(curated_asset, _live=False)
+    return None
 
 
 def inject_styles():
@@ -602,6 +747,110 @@ def inject_styles():
             .spotlight-card p {
                 margin: 0;
                 line-height: 1.74;
+            }
+
+            .asset-card {
+                background: rgba(255, 255, 255, 0.92);
+                border: 1px solid rgba(46, 123, 83, 0.14);
+                border-radius: 22px;
+                padding: 1.1rem 1.15rem 0.85rem;
+                margin-bottom: 0.5rem;
+                box-shadow: 0 12px 24px rgba(24, 60, 43, 0.06);
+            }
+
+            .asset-card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 0.65rem;
+                margin-bottom: 0.35rem;
+            }
+
+            .asset-card-name {
+                font-weight: 800;
+                font-size: 1.12rem;
+                color: var(--green-900);
+            }
+
+            .asset-card-badges {
+                display: flex;
+                gap: 0.4rem;
+                align-items: center;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+
+            .asset-card-ticker,
+            .asset-card-live,
+            .asset-card-static {
+                font-size: 0.78rem;
+                font-weight: 700;
+                border-radius: 999px;
+                padding: 0.2rem 0.6rem;
+            }
+
+            .asset-card-ticker {
+                color: var(--ink-500);
+                background: rgba(46, 123, 83, 0.08);
+            }
+
+            .asset-card-live {
+                color: #1b6e42;
+                background: rgba(70, 164, 105, 0.12);
+            }
+
+            .asset-card-static {
+                color: #5b7a8c;
+                background: rgba(47, 125, 202, 0.10);
+            }
+
+            .asset-card-meta {
+                font-size: 0.88rem;
+                color: var(--ink-500);
+                margin-bottom: 0.6rem;
+            }
+
+            .asset-pill-row {
+                display: flex;
+                gap: 0.4rem;
+                flex-wrap: wrap;
+                margin-top: 0.45rem;
+            }
+
+            .asset-pill {
+                font-size: 0.78rem;
+                font-weight: 700;
+                border-radius: 999px;
+                padding: 0.18rem 0.55rem;
+                border: 1px solid rgba(46, 123, 83, 0.12);
+                background: rgba(237, 247, 241, 0.85);
+                color: var(--green-700);
+            }
+
+            .esg-bar-wrap {
+                margin-top: 0.7rem;
+            }
+
+            .esg-bar-label {
+                display: flex;
+                justify-content: space-between;
+                gap: 1rem;
+                font-size: 0.8rem;
+                color: var(--ink-500);
+                margin-bottom: 0.2rem;
+            }
+
+            .esg-bar-track {
+                height: 7px;
+                border-radius: 999px;
+                background: rgba(46, 123, 83, 0.10);
+                overflow: hidden;
+            }
+
+            .esg-bar-fill {
+                height: 100%;
+                border-radius: 999px;
+                background: linear-gradient(90deg, #2e7b53, #54c87a);
             }
 
             div[data-testid="metric-container"] {
@@ -1280,6 +1529,248 @@ def sync_lambda_input():
     st.session_state.lambda_val = st.session_state._l_ni
 
 
+def render_asset_card_html(asset: dict) -> str:
+    price_text = ""
+    if asset.get("_price") is not None:
+        price_text = f"  ·  Last price {asset['_price']:,.2f}"
+
+    if asset.get("_source") == "custom":
+        source_badge = '<span class="asset-card-static">Custom input</span>'
+    elif asset.get("_live"):
+        source_badge = '<span class="asset-card-live">Live data</span>'
+    else:
+        source_badge = '<span class="asset-card-static">Curated profile</span>'
+    asset_ticker = asset.get("ticker") or "Custom"
+    esg_composite = composite_esg(asset["e"], asset["s"], asset["g"], 1, 1, 1) / 100
+    score_value = int(round(esg_composite * 100))
+
+    pills = "".join(
+        [
+            f'<span class="asset-pill">E: {asset["e"]:.0f}</span>',
+            f'<span class="asset-pill">S: {asset["s"]:.0f}</span>',
+            f'<span class="asset-pill">G: {asset["g"]:.0f}</span>',
+            f'<span class="asset-pill">mu: {asset["mu"] * 100:.1f}%</span>',
+            f'<span class="asset-pill">sigma: {asset["sigma"] * 100:.1f}%</span>',
+        ]
+    )
+
+    return f"""
+    <div class="asset-card">
+        <div class="asset-card-header">
+            <span class="asset-card-name">{asset["name"]}</span>
+            <span class="asset-card-badges">
+                <span class="asset-card-ticker">{asset_ticker}</span>
+                {source_badge}
+            </span>
+        </div>
+        <div class="asset-card-meta">{asset["sector"]}{price_text}</div>
+        <div class="esg-bar-wrap">
+            <div class="esg-bar-label">
+                <span>ESG quality</span>
+                <span>{score_value}/100 [{esg_rating(esg_composite)}]</span>
+            </div>
+            <div class="esg-bar-track">
+                <div class="esg-bar-fill" style="width:{score_value}%"></div>
+            </div>
+        </div>
+        <div class="asset-pill-row">{pills}</div>
+    </div>
+    """
+
+
+def render_asset_selector(asset_num: int, excluded_sectors: set):
+    mode_key = f"asset{asset_num}_mode"
+    ticker_key = f"asset{asset_num}_ticker"
+    e_w = st.session_state.e_w
+    s_w = st.session_state.s_w
+    g_w = st.session_state.g_w
+
+    st.markdown(
+        f"""
+        <div class="section-kicker">Asset {asset_num}</div>
+        <h4 style="margin:0.2rem 0 0.55rem;">Asset {asset_num} — choose or build</h4>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    mode_options = ["curated", "search", "custom"]
+    mode = st.radio(
+        "Input method",
+        options=mode_options,
+        format_func=lambda value: {
+            "curated": "Pick from curated list",
+            "search": "Search by ticker",
+            "custom": "Enter manually",
+        }[value],
+        key=f"radio_mode_{asset_num}",
+        index=mode_options.index(st.session_state[mode_key]),
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    st.session_state[mode_key] = mode
+
+    asset_data = None
+
+    if mode == "curated":
+        default_ticker = st.session_state[ticker_key]
+        default_idx = next(
+            (idx for idx, asset in enumerate(CURATED_ASSETS) if asset["ticker"] == default_ticker),
+            0,
+        )
+        chosen_label = st.selectbox(
+            "Select an asset",
+            options=CURATED_NAMES,
+            index=default_idx,
+            key=f"curated_sel_{asset_num}",
+        )
+        selected_asset = dict(CURATED_ASSETS[CURATED_NAMES.index(chosen_label)])
+        st.session_state[ticker_key] = selected_asset["ticker"]
+        with st.expander("Override ESG scores (optional)", expanded=False):
+            st.caption("The curated values are pre-filled. Adjust them only if you have better data.")
+            columns = st.columns(3)
+            selected_asset["e"] = columns[0].slider(
+                "Environmental",
+                0.0,
+                100.0,
+                float(selected_asset["e"]),
+                key=f"curated_e_{asset_num}",
+            )
+            selected_asset["s"] = columns[1].slider(
+                "Social",
+                0.0,
+                100.0,
+                float(selected_asset["s"]),
+                key=f"curated_s_{asset_num}",
+            )
+            selected_asset["g"] = columns[2].slider(
+                "Governance",
+                0.0,
+                100.0,
+                float(selected_asset["g"]),
+                key=f"curated_g_{asset_num}",
+            )
+        asset_data = dict(selected_asset, _live=False, _source="curated")
+
+    elif mode == "search":
+        ticker_input = st.text_input(
+            "Enter ticker (for example AAPL, TSLA, NVDA)",
+            value=st.session_state[ticker_key],
+            key=f"ticker_input_{asset_num}",
+            placeholder="Ticker symbol",
+        ).strip().upper()
+
+        if ticker_input:
+            with st.spinner(f"Fetching {ticker_input}..."):
+                fetched_asset = resolve_asset(ticker_input)
+
+            if fetched_asset:
+                st.session_state[ticker_key] = ticker_input
+                with st.expander("Override ESG scores (optional)", expanded=False):
+                    st.caption("These values come from live data when available, otherwise from the curated fallback profile.")
+                    columns = st.columns(3)
+                    fetched_asset["e"] = columns[0].slider(
+                        "Environmental",
+                        0.0,
+                        100.0,
+                        float(fetched_asset["e"]),
+                        key=f"search_e_{asset_num}",
+                    )
+                    fetched_asset["s"] = columns[1].slider(
+                        "Social",
+                        0.0,
+                        100.0,
+                        float(fetched_asset["s"]),
+                        key=f"search_s_{asset_num}",
+                    )
+                    fetched_asset["g"] = columns[2].slider(
+                        "Governance",
+                        0.0,
+                        100.0,
+                        float(fetched_asset["g"]),
+                        key=f"search_g_{asset_num}",
+                    )
+                fetched_asset["_source"] = "live" if fetched_asset.get("_live") else "curated"
+                asset_data = fetched_asset
+                if not fetched_asset.get("_live"):
+                    st.info(f"Live lookup was unavailable for {ticker_input}, so GreenVest is using the curated fallback profile instead.")
+            else:
+                st.warning(f"GreenVest could not find data for {ticker_input}. Check the ticker or switch to manual entry.")
+
+    else:
+        columns = st.columns([1.05, 1], gap="large")
+        with columns[0]:
+            name = st.text_input("Name", value=f"Asset {asset_num}", key=f"manual_name_{asset_num}")
+            sector = st.selectbox(
+                "Sector",
+                SECTORS,
+                index=0 if asset_num == 1 else 1,
+                key=f"manual_sector_{asset_num}",
+            )
+            mu = st.number_input(
+                "Expected return (%)",
+                -100.0,
+                500.0,
+                8.0 if asset_num == 1 else 5.0,
+                0.1,
+                key=f"manual_mu_{asset_num}",
+            ) / 100
+            sigma = st.number_input(
+                "Std deviation (%)",
+                0.01,
+                500.0,
+                15.0 if asset_num == 1 else 10.0,
+                0.1,
+                key=f"manual_sigma_{asset_num}",
+            ) / 100
+
+        with columns[1]:
+            st.caption("ESG pillar scores")
+            e_score = st.slider("Environmental", 0.0, 100.0, 70.0 if asset_num == 1 else 50.0, key=f"manual_e_{asset_num}")
+            s_score = st.slider("Social", 0.0, 100.0, 65.0 if asset_num == 1 else 55.0, key=f"manual_s_{asset_num}")
+            g_score = st.slider("Governance", 0.0, 100.0, 60.0 if asset_num == 1 else 45.0, key=f"manual_g_{asset_num}")
+
+        asset_data = {
+            "name": name,
+            "ticker": "Custom",
+            "sector": sector,
+            "mu": mu,
+            "sigma": sigma,
+            "e": e_score,
+            "s": s_score,
+            "g": g_score,
+            "_live": False,
+            "_source": "custom",
+        }
+
+    if asset_data is None:
+        return None
+
+    esg_composite = composite_esg(asset_data["e"], asset_data["s"], asset_data["g"], e_w, s_w, g_w) / 100
+    is_excluded = asset_data["sector"] in excluded_sectors
+
+    st.markdown(render_asset_card_html(asset_data), unsafe_allow_html=True)
+    st.caption(
+        f"Composite ESG used in the optimiser: {esg_composite * 100:.1f} [{esg_rating(esg_composite)}]"
+    )
+
+    if esg_composite >= 0.60 and asset_data["g"] / 100 < 0.35:
+        st.warning(
+            f"Greenwashing alert: {asset_data['name']} has a strong overall ESG score but weak governance."
+        )
+
+    if is_excluded:
+        st.error(
+            f"{asset_data['name']} sits inside an excluded sector ({asset_data['sector']}), so GreenVest will force its allocation to 0%."
+        )
+
+    return {
+        **asset_data,
+        "esg_c": esg_composite,
+        "esg_a": esg_composite,
+        "is_excluded": is_excluded,
+    }
+
+
 def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambling, excl_fossil, excl_alcohol):
     st.session_state.e_w = e_w
     st.session_state.s_w = s_w
@@ -1328,7 +1819,7 @@ def render_profile_builder(editing=False):
     step = st.session_state.onboarding_step
     heading = "Investor Preference Builder" if not editing else "Update Investor Preferences"
     body = (
-        "Answer five short questions and GreenVest will shape the portfolio around the investor's goals."
+        "Answer five short questions and GreenVest will shape the portfolio around the investor's goals while you choose the assets below."
         if not editing
         else "Adjust the profile inline and the recommendation will refresh with the new sustainability preferences."
     )
@@ -1559,9 +2050,9 @@ def render_landing_page():
                                 rather than hiding the methodology behind a vague label.
                             </div>
                             <div class="hero-point">
-                                <strong>More investor-friendly decisions</strong>
-                                Investors can see the trade-off between return, risk, and impact in one
-                                guided experience instead of jumping around disconnected screens.
+                                <strong>Real assets and live ticker lookup</strong>
+                                GreenVest now lets investors pick from a curated asset library or search real
+                                tickers, so the portfolio conversation feels closer to an actual investment workflow.
                             </div>
                             <div class="hero-point">
                                 <strong>Better outputs for real conversations</strong>
@@ -1650,6 +2141,10 @@ def initialize_session_state():
         "lambda_val": 0.06,
         "profile": "Balanced",
         "goal_label": "Long-term growth",
+        "asset1_mode": "curated",
+        "asset2_mode": "curated",
+        "asset1_ticker": "AAPL",
+        "asset2_ticker": "MSFT",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -1669,6 +2164,7 @@ def handle_entry_actions():
         st.rerun()
 
     if action == "guided":
+        st.session_state.entered_app = True
         st.session_state.show_profile_builder = True
         st.session_state.setup_mode = "guided"
         st.session_state.onboarding_step = 1
@@ -1682,7 +2178,7 @@ def render_dashboard():
     e_w = st.session_state.e_w
     s_w = st.session_state.s_w
     g_w = st.session_state.g_w
-    show_charts_first = st.session_state.setup_mode == "manual"
+    show_charts_first = st.session_state.setup_mode in {"manual", "guided"}
 
     st.markdown(
         f"""
@@ -1708,7 +2204,10 @@ def render_dashboard():
         unsafe_allow_html=True,
     )
 
-    top_actions = st.columns([1.35, 1, 1.05])
+    top_actions = st.columns([1.05, 1.2, 1.05])
+    with top_actions[0]:
+        if st.button("Go Home"):
+            go_home()
     with top_actions[2]:
         if st.button("Update Preferences"):
             st.session_state.show_profile_builder = True
@@ -1716,7 +2215,7 @@ def render_dashboard():
             st.rerun()
 
     if st.session_state.show_profile_builder:
-        render_profile_builder(editing=True)
+        render_profile_builder(editing=st.session_state.onboarding_done)
         st.write("")
 
     charts_slot = st.container() if show_charts_first else None
@@ -1729,7 +2228,7 @@ def render_dashboard():
             <div class="section-kicker">Portfolio builder</div>
             <h3 class="section-title">Shape the assets and market assumptions</h3>
             <p class="section-copy">
-                Change the asset characteristics, ESG pillar scores, and market context.
+                Pick from the curated asset library, search a real ticker, or enter a custom asset manually.
                 The recommendation refreshes immediately in the panel beside it.
             </p>
             """,
@@ -1824,78 +2323,9 @@ def render_dashboard():
         )
 
         excluded_sectors = get_excluded_sectors()
-        assets = {}
-
-        for i in [1, 2]:
-            st.write("")
-            st.markdown(
-                f"""
-                <div class="section-kicker">Asset {i}</div>
-                <h4 style="margin:0.2rem 0 0.35rem;">Asset {i} inputs</h4>
-                """,
-                unsafe_allow_html=True,
-            )
-            cols = st.columns([1.1, 1], gap="large")
-
-            with cols[0]:
-                name = st.text_input("Name", value=f"Asset {i}", key=f"name{i}")
-                sector = st.selectbox(
-                    "Sector",
-                    SECTORS,
-                    index=0 if i == 1 else 1,
-                    key=f"sector{i}",
-                )
-                mu = st.number_input(
-                    "Expected return (%)",
-                    -100.0,
-                    500.0,
-                    8.0 if i == 1 else 5.0,
-                    0.1,
-                    key=f"mu{i}",
-                ) / 100
-                sigma = st.number_input(
-                    "Std deviation (%)",
-                    0.01,
-                    500.0,
-                    15.0 if i == 1 else 10.0,
-                    0.1,
-                    key=f"sigma{i}",
-                ) / 100
-
-            with cols[1]:
-                st.caption("ESG pillar scores")
-                e_score = st.slider("Environmental", 0.0, 100.0, 70.0 if i == 1 else 50.0, key=f"e{i}")
-                s_score = st.slider("Social", 0.0, 100.0, 65.0 if i == 1 else 55.0, key=f"s{i}")
-                g_score = st.slider("Governance", 0.0, 100.0, 60.0 if i == 1 else 45.0, key=f"g{i}")
-
-            esg_composite = composite_esg(e_score, s_score, g_score, e_w, s_w, g_w) / 100
-            adjusted_esg = esg_composite
-            is_excluded = sector in excluded_sectors
-
-            st.caption(
-                f"Composite ESG used in the optimiser: {esg_composite * 100:.1f} [{esg_rating(esg_composite)}]"
-            )
-
-            if esg_composite >= 0.60 and g_score / 100 < 0.35:
-                st.warning(f"Greenwashing alert: {name} has a strong overall ESG score but weak governance.")
-
-            if is_excluded:
-                st.error(
-                    f"{name} sits inside an excluded sector ({sector}), so GreenVest will force its allocation to 0%."
-                )
-
-            assets[i] = {
-                "name": name,
-                "sector": sector,
-                "mu": mu,
-                "sigma": sigma,
-                "e": e_score,
-                "s": s_score,
-                "g": g_score,
-                "esg_c": esg_composite,
-                "esg_a": adjusted_esg,
-                "is_excluded": is_excluded,
-            }
+        a1 = render_asset_selector(1, excluded_sectors)
+        st.write("")
+        a2 = render_asset_selector(2, excluded_sectors)
 
         st.write("")
         rho = st.slider(
@@ -1907,8 +2337,34 @@ def render_dashboard():
             help="-1 means the assets move opposite to each other. 1 means they move together.",
         )
 
-    a1 = assets[1]
-    a2 = assets[2]
+    if a1 is None or a2 is None:
+        if show_charts_first and charts_slot is not None:
+            with charts_slot:
+                st.markdown(
+                    """
+                    <div class="section-kicker">Investor Charts</div>
+                    <h3 class="section-title">Investor Charts</h3>
+                    <p class="section-copy">
+                        Complete both asset selections to unlock the visual comparison and projection view.
+                    </p>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                st.info("Choose two assets first, then GreenVest will generate the charts and recommendation.")
+        with insight_col:
+            st.markdown(
+                """
+                <div class="section-kicker">GreenVest recommendation</div>
+                <h3 class="section-title">Read the portfolio as a story, not a spreadsheet</h3>
+                <p class="section-copy">
+                    Complete both asset selections to see the recommendation, projected growth, and export summary.
+                </p>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.info("Pick or search for two assets to generate the investor-facing recommendation.")
+        return
+
     both_excluded = a1["is_excluded"] and a2["is_excluded"]
     force_w1 = None
     if a1["is_excluded"] and not a2["is_excluded"]:
@@ -2036,7 +2492,7 @@ def render_dashboard():
             <h3 class="section-title">Read the portfolio as a story, not a spreadsheet</h3>
             <p class="section-copy">
                 The panel below summarises the recommended mix, why it fits the investor, and how
-                the ESG profile compares across the two assets.
+                the return, risk, and ESG trade-off lands under the current assumptions.
             </p>
             """,
             unsafe_allow_html=True,
