@@ -2148,4 +2148,5 @@ if not st.session_state.entered_app:
         render_profile_builder(editing=False)
     st.stop()
 
+
 render_dashboard()
