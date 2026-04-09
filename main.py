@@ -23,7 +23,6 @@ st.set_page_config(
 ROOT = Path(__file__).parent
 STATIC_DIR = ROOT / "static"
 LOGO_PATH = STATIC_DIR / "Sustainable growth and innovation logo.png"
-GLASSES_PATH = STATIC_DIR / "glasses.png"
 QUESTION_PATH = STATIC_DIR / "question.png"
 
 SECTORS = [
@@ -109,7 +108,6 @@ def image_to_data_uri(path: Path, make_transparent=False) -> str:
 
 
 LOGO_DATA_URI = image_to_data_uri(LOGO_PATH, make_transparent=True)
-GLASSES_DATA_URI = image_to_data_uri(GLASSES_PATH, make_transparent=True)
 QUESTION_DATA_URI = image_to_data_uri(QUESTION_PATH, make_transparent=True)
 
 
@@ -192,7 +190,7 @@ def inject_styles():
                 background:
                     radial-gradient(circle at center, rgba(132, 213, 154, 0.42), transparent 35%),
                     linear-gradient(180deg, #f7fcf8 0%, #eff7f1 100%);
-                animation: loader-fade 2.3s ease forwards;
+                animation: loader-fade 3.4s ease forwards;
             }
 
             .loader-logo {
@@ -218,7 +216,7 @@ def inject_styles():
             }
 
             @keyframes loader-fade {
-                0%, 62% { opacity: 1; visibility: visible; }
+                0%, 74% { opacity: 1; visibility: visible; }
                 100% { opacity: 0; visibility: hidden; pointer-events: none; }
             }
 
@@ -260,24 +258,31 @@ def inject_styles():
                 display: grid;
                 grid-template-columns: 1.3fr 0.9fr;
                 gap: 1.2rem;
-                align-items: stretch;
+                align-items: center;
             }
 
-            .hero-brand {
+            .hero-main {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                min-height: 100%;
+                padding: 0.35rem 0 0.2rem;
+            }
+
+            .hero-brand-row {
                 display: flex;
                 gap: 1rem;
-                align-items: flex-start;
-                margin-top: 0.6rem;
-                margin-bottom: 0.75rem;
+                align-items: center;
+                margin: 0.7rem 0 0.9rem;
             }
 
             .hero-logo {
-                width: 86px;
-                height: 86px;
+                width: 82px;
+                height: 82px;
                 object-fit: contain;
                 filter: drop-shadow(0 10px 20px rgba(31, 88, 58, 0.16));
-                margin-top: -0.45rem;
                 flex-shrink: 0;
+                transform: translateY(-1px);
             }
 
             .hero-kicker,
@@ -307,11 +312,15 @@ def inject_styles():
                 line-height: 0.95;
             }
 
+            .hero-brand-row .hero-title {
+                margin: 0;
+            }
+
             .hero-copy {
                 font-size: 1.05rem;
                 line-height: 1.8;
                 max-width: 56ch;
-                margin-bottom: 1.35rem;
+                margin: 0 0 1.35rem;
             }
 
             .hero-actions {
@@ -321,7 +330,12 @@ def inject_styles():
                 margin-bottom: 0.75rem;
             }
 
+            .hero-action-form {
+                margin: 0;
+            }
+
             .hero-button {
+                appearance: none;
                 text-decoration: none !important;
                 color: white !important;
                 font-weight: 800;
@@ -331,6 +345,9 @@ def inject_styles():
                 text-align: center;
                 box-shadow: 0 20px 30px rgba(37, 100, 68, 0.16);
                 border: 1px solid rgba(255, 255, 255, 0.46);
+                cursor: pointer;
+                font-family: "Manrope", "Trebuchet MS", sans-serif;
+                font-size: 1.03rem;
             }
 
             .hero-button.green {
@@ -367,7 +384,7 @@ def inject_styles():
             }
 
             .hero-panel-copy {
-                max-width: calc(100% - 140px);
+                max-width: 100%;
             }
 
             .hero-points {
@@ -387,14 +404,6 @@ def inject_styles():
                 display: block;
                 color: var(--green-900);
                 margin-bottom: 0.2rem;
-            }
-
-            .hero-mascot {
-                position: absolute;
-                right: -0.4rem;
-                bottom: -0.85rem;
-                width: 155px;
-                filter: drop-shadow(0 14px 24px rgba(24, 60, 43, 0.12));
             }
 
             .fact-grid {
@@ -554,7 +563,7 @@ def inject_styles():
                 background: linear-gradient(180deg, rgba(241, 248, 244, 0.98), rgba(234, 244, 252, 0.96));
                 border: 1px solid rgba(46, 123, 83, 0.12);
                 border-radius: 24px;
-                padding: 1.15rem 1.1rem 1rem;
+                padding: 1rem 0.95rem 0.95rem;
                 box-shadow: 0 16px 28px rgba(24, 60, 43, 0.06);
             }
 
@@ -571,8 +580,8 @@ def inject_styles():
 
             .guide-mascot-image {
                 display: block;
-                width: min(220px, 100%);
-                margin: 0.9rem auto 0;
+                width: min(176px, 100%);
+                margin: 0.8rem auto 0;
                 filter: drop-shadow(0 12px 22px rgba(24, 60, 43, 0.12));
             }
 
@@ -702,14 +711,21 @@ def inject_styles():
                 .hero-panel-copy {
                     max-width: 100%;
                 }
-
-                .hero-mascot {
-                    position: static;
-                    width: 120px;
-                    margin: 1rem 0 0 auto;
-                    display: block;
-                }
             }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"""
+        <style>
+            .hero-kicker::before,
+            .section-kicker::before {{
+                width: 14px;
+                height: 14px;
+                border-radius: 0;
+                background: url("{LOGO_DATA_URI}") center / contain no-repeat;
+            }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -1220,7 +1236,7 @@ def render_profile_builder(editing=False):
         """,
         unsafe_allow_html=True,
     )
-    content_col, mascot_col = st.columns([1.18, 0.42], gap="large")
+    content_col, mascot_col = st.columns([1.28, 0.32], gap="large")
 
     with mascot_col:
         st.markdown(
@@ -1229,8 +1245,8 @@ def render_profile_builder(editing=False):
                 <div class="section-kicker">Investor guide</div>
                 <h4>Preference helper</h4>
                 <p>
-                    This question mascot sits beside the profiling flow and keeps the focus on the
-                    answers that shape risk, sustainability, and sector exclusions.
+                    Use this area to guide the investor through the answers that shape risk,
+                    sustainability priorities, and sector exclusions.
                 </p>
                 <img class="guide-mascot-image" src="{QUESTION_DATA_URI}" alt="Question mascot">
             </div>
@@ -1402,22 +1418,24 @@ def render_landing_page():
         f"""
         <section class="hero-shell">
             <div class="hero-grid">
-                <div>
+                <div class="hero-main">
                     <div class="hero-kicker">Welcome to GreenVest</div>
-                    <div class="hero-brand">
+                    <div class="hero-brand-row">
                         <img class="hero-logo" src="{LOGO_DATA_URI}" alt="GreenVest logo">
-                        <div>
-                            <h1 class="hero-title">GreenVest</h1>
-                            <p class="hero-copy">
-                                Sustainable investing should feel clear, modern, and reassuring.
-                                GreenVest helps investors compare return, risk, and ESG quality without
-                                forcing them through a cluttered workflow.
-                            </p>
-                        </div>
+                        <h1 class="hero-title">GreenVest</h1>
                     </div>
+                    <p class="hero-copy">
+                        Sustainable investing should feel clear, modern, and reassuring.
+                        GreenVest helps investors compare return, risk, and ESG quality without
+                        forcing them through a cluttered workflow.
+                    </p>
                     <div class="hero-actions">
-                        <a class="hero-button green" href="?launch=manual">Create Your Own</a>
-                        <a class="hero-button blue" href="?launch=guided">Generate For Me</a>
+                        <form class="hero-action-form" method="get" target="_self">
+                            <button class="hero-button green" type="submit" name="launch" value="manual">Create Your Own</button>
+                        </form>
+                        <form class="hero-action-form" method="get" target="_self">
+                            <button class="hero-button blue" type="submit" name="launch" value="guided">Generate For Me</button>
+                        </form>
                     </div>
                     <div class="hero-note">
                         Use the green path for a self-directed portfolio build, or the blue path to generate
@@ -1426,23 +1444,25 @@ def render_landing_page():
                 </div>
                 <div class="hero-panel">
                     <div class="hero-panel-copy">
-                        <h4>What changes in this redesign</h4>
+                        <h4>What GreenVest does better</h4>
                         <div class="hero-points">
                             <div class="hero-point">
-                                <strong>Cleaner first impression</strong>
-                                A branded welcome screen replaces the old popup-driven entry flow.
+                                <strong>More transparent sustainability scoring</strong>
+                                GreenVest shows how ESG is built from weighted E, S, and G inputs,
+                                rather than hiding the methodology behind a vague label.
                             </div>
                             <div class="hero-point">
-                                <strong>Better investor readability</strong>
-                                The dashboard moves from tabs into a guided build-and-insight layout.
+                                <strong>More investor-friendly decisions</strong>
+                                Investors can see the trade-off between return, risk, and impact in one
+                                guided experience instead of jumping around disconnected screens.
                             </div>
                             <div class="hero-point">
-                                <strong>Sharper visuals</strong>
-                                Only the ESG frontier and future value charts remain, both enlarged and simplified.
+                                <strong>Better outputs for real conversations</strong>
+                                The app now supports cleaner charts, clearer explanations, and a one-page
+                                PDF summary that is easier to use in meetings and submissions.
                             </div>
                         </div>
                     </div>
-                    <img class="hero-mascot" src="{GLASSES_DATA_URI}" alt="GreenVest mascot">
                 </div>
             </div>
         </section>
@@ -1454,8 +1474,8 @@ def render_landing_page():
         """
         <div class="fact-grid">
             <div class="fact-card">
-                <div class="section-kicker">What it is</div>
-                <h4>Sustainable investing in plain language</h4>
+                <div class="section-kicker">What it is?</div>
+                <h4>What is sustainable investing?</h4>
                 <p>
                     Sustainable investing looks at financial return alongside environmental, social,
                     and governance performance. Instead of asking only "what could this earn?",
@@ -1463,8 +1483,8 @@ def render_landing_page():
                 </p>
             </div>
             <div class="fact-card">
-                <div class="section-kicker">Why it matters</div>
-                <h4>Why investors choose this approach</h4>
+                <div class="section-kicker">Why it matters?</div>
+                <h4>Why does it matter?</h4>
                 <p>
                     Investors often use sustainable strategies to align with their values, manage long-run
                     regulatory and reputational risk, and back companies that may be better positioned for
