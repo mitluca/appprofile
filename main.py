@@ -267,6 +267,9 @@ def inject_styles():
                 justify-content: center;
                 min-height: 100%;
                 padding: 0.35rem 0 0.2rem;
+                width: 100%;
+                max-width: 820px;
+                margin: 0 auto;
             }
 
             .hero-brand-row {
@@ -282,7 +285,7 @@ def inject_styles():
                 object-fit: contain;
                 filter: drop-shadow(0 10px 20px rgba(31, 88, 58, 0.16));
                 flex-shrink: 0;
-                transform: translateY(-1px);
+                transform: translateY(-5px);
             }
 
             .hero-kicker,
@@ -721,8 +724,8 @@ def inject_styles():
         <style>
             .hero-kicker::before,
             .section-kicker::before {{
-                width: 14px;
-                height: 14px;
+                width: 19px;
+                height: 19px;
                 border-radius: 0;
                 background: url("{LOGO_DATA_URI}") center / contain no-repeat;
             }}
@@ -764,10 +767,6 @@ def p_util(mu, sig, esg, gamma, lam):
 def composite_esg(e, s, g, we, ws, wg):
     total_weight = we + ws + wg
     return (we * e + ws * s + wg * g) / total_weight if total_weight > 0 else 0
-
-
-def esg_momentum(now, last):
-    return (now - last) / last if last > 0 else 0
 
 
 def esg_rating(score):
@@ -817,10 +816,12 @@ def derive_lambda(e_w, s_w, g_w, excl_count, goal_lam):
 
 
 def style_axis(ax):
-    ax.set_facecolor("#ffffff")
-    ax.grid(True, color="#d6e7d9", linewidth=0.85, alpha=0.75)
+    ax.set_facecolor("#fcfffd")
+    ax.set_axisbelow(True)
+    ax.grid(True, color="#d6e7d9", linewidth=0.85, alpha=0.7)
     for spine in ax.spines.values():
         spine.set_color("#cddfd2")
+        spine.set_linewidth(1.0)
     ax.tick_params(colors="#406854", labelsize=10)
     ax.xaxis.label.set_color("#406854")
     ax.yaxis.label.set_color("#406854")
@@ -838,12 +839,12 @@ def build_frontier_chart(
     esg_adjusted_low_risk,
 ):
     fig, ax = plt.subplots(figsize=(8.2, 5.7))
-    fig.patch.set_facecolor("#ffffff")
+    fig.patch.set_facecolor("#fcfffd")
     style_axis(ax)
 
     points = np.array([sigma_grid, esg_adjusted_grid]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
-    collection = LineCollection(segments, cmap="YlGn", linewidth=4)
+    collection = LineCollection(segments, cmap="YlGn", linewidth=4.2)
     collection.set_array(esg_grid)
     ax.add_collection(collection)
     ax.autoscale()
@@ -860,10 +861,10 @@ def build_frontier_chart(
     ax.scatter(
         sigma_opt,
         esg_adjusted_opt,
-        s=72,
+        s=86,
         color="#1f6844",
-        edgecolors="#d8f2e0",
-        linewidths=1.4,
+        edgecolors="#ffffff",
+        linewidths=1.8,
         label="GreenVest optimum",
         zorder=5,
     )
@@ -876,6 +877,17 @@ def build_frontier_chart(
         linewidths=1.1,
         label="Financial-only benchmark",
         zorder=4,
+    )
+
+    ax.annotate(
+        "GreenVest recommendation",
+        xy=(sigma_opt, esg_adjusted_opt),
+        xytext=(16, 16),
+        textcoords="offset points",
+        fontsize=9.2,
+        color="#173b2b",
+        bbox=dict(boxstyle="round,pad=0.28", fc="white", ec="#d6e7d9", alpha=0.96),
+        arrowprops=dict(arrowstyle="-", color="#4c8f68", lw=1.2),
     )
     ax.scatter(
         sigma_low_risk,
@@ -914,7 +926,7 @@ def build_frontier_chart(
 def build_future_value_chart(invest, opt_return, benchmark_return=None, selected_label="GreenVest"):
     years = np.arange(0, 31)
     fig, ax = plt.subplots(figsize=(7.8, 5.7))
-    fig.patch.set_facecolor("#ffffff")
+    fig.patch.set_facecolor("#fcfffd")
     style_axis(ax)
 
     opt_values = [future_value(invest, opt_return, year) for year in years]
@@ -926,6 +938,7 @@ def build_future_value_chart(invest, opt_return, benchmark_return=None, selected
         label=f"{selected_label} strategy",
     )
     ax.fill_between(years, opt_values, color="#d9efdf", alpha=0.4)
+    ax.scatter(years[-1], opt_values[-1], color="#1f6844", s=70, edgecolors="white", linewidths=1.6, zorder=5)
 
     if benchmark_return is not None:
         benchmark_values = [future_value(invest, benchmark_return, year) for year in years]
@@ -937,11 +950,39 @@ def build_future_value_chart(invest, opt_return, benchmark_return=None, selected
             linestyle="--",
             label="Balanced 50 / 50 reference",
         )
+        ax.scatter(
+            years[-1],
+            benchmark_values[-1],
+            color="#2f7dca",
+            s=60,
+            edgecolors="white",
+            linewidths=1.4,
+            zorder=5,
+        )
 
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"GBP {x:,.0f}"))
     ax.set_xlabel("Years invested")
     ax.set_ylabel("Projected portfolio value")
     ax.set_title("Future Value Projection", fontsize=15, fontweight="bold", color="#163a2a", pad=14)
+    ax.annotate(
+        f"GBP {opt_values[-1]:,.0f}",
+        xy=(years[-1], opt_values[-1]),
+        xytext=(-74, 16),
+        textcoords="offset points",
+        fontsize=9,
+        color="#173b2b",
+        bbox=dict(boxstyle="round,pad=0.28", fc="white", ec="#d6e7d9", alpha=0.96),
+    )
+    if benchmark_return is not None:
+        ax.annotate(
+            f"GBP {benchmark_values[-1]:,.0f}",
+            xy=(years[-1], benchmark_values[-1]),
+            xytext=(-70, -28),
+            textcoords="offset points",
+            fontsize=8.7,
+            color="#235f9b",
+            bbox=dict(boxstyle="round,pad=0.28", fc="white", ec="#d6e7d9", alpha=0.96),
+        )
     ax.legend(
         loc="upper left",
         fontsize=8.8,
@@ -1057,8 +1098,8 @@ def build_summary_pdf_bytes(
             0.0,
             0.04,
             (
-                "Method note: GreenVest combines weighted E, S, and G pillar scores, applies a small "
-                "momentum adjustment for improving companies, and then blends ESG into the utility score."
+                "Method note: GreenVest combines weighted E, S, and G pillar scores into one ESG score "
+                "and then blends that score into the portfolio utility calculation."
             ),
             fontsize=10.4,
             color="#5b7d69",
@@ -1132,6 +1173,72 @@ def build_summary_pdf_bytes(
 
     buffer.seek(0)
     return buffer.getvalue()
+
+
+def render_investor_charts_section(both_excluded, force_w1, results, a1, a2, invest, title):
+    st.write("")
+    st.markdown(
+        f"""
+        <div class="section-kicker">{title}</div>
+        <h3 class="section-title">{title}</h3>
+        <p class="section-copy">
+            These charts highlight the portfolio recommendation and its long-term projection in a cleaner,
+            more presentation-ready format.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    chart_cols = st.columns(2, gap="large")
+    if both_excluded:
+        with chart_cols[0]:
+            st.error("Frontier chart unavailable until at least one asset falls outside the excluded sectors.")
+        with chart_cols[1]:
+            st.info("Future value projection will appear again once the portfolio becomes investable.")
+        return
+
+    if force_w1 is None:
+        frontier_fig = build_frontier_chart(
+            results["sigma_grid"],
+            results["esg_adjusted_grid"],
+            results["esg_grid"],
+            results["sigma_opt"],
+            results["esg_adjusted_grid"][results["idx"]],
+            results["sigma_ms"][results["idx_financial"]],
+            results["esg_adjusted_ms"][results["idx_financial"]],
+            results["sigma_grid"][results["idx_low_risk"]],
+            results["esg_adjusted_grid"][results["idx_low_risk"]],
+        )
+        with chart_cols[0]:
+            st.markdown("#### ESG efficient frontier")
+            st.pyplot(frontier_fig)
+            plt.close(frontier_fig)
+            st.markdown(
+                '<div class="chart-caption">The frontier now highlights the recommendation more clearly and keeps the benchmark markers lighter.</div>',
+                unsafe_allow_html=True,
+            )
+    else:
+        with chart_cols[0]:
+            st.markdown("#### ESG efficient frontier")
+            st.info(
+                "The ESG efficient frontier only appears when both assets remain investable. Remove the exclusion to compare mixes again."
+            )
+
+    selected_label = a1["name"] if results["w1"] >= results["w2"] else a2["name"]
+    future_fig = build_future_value_chart(
+        invest,
+        results["mu_opt"],
+        benchmark_return=results["benchmark_return"],
+        selected_label=selected_label,
+    )
+    with chart_cols[1]:
+        st.markdown("#### Future value projection")
+        st.pyplot(future_fig)
+        plt.close(future_fig)
+        st.markdown(
+            '<div class="chart-caption">Projected values use the current assumptions from the builder below, so investors can compare recommendations instantly.</div>',
+            unsafe_allow_html=True,
+        )
 
 
 def get_excluded_sectors():
@@ -1575,6 +1682,7 @@ def render_dashboard():
     e_w = st.session_state.e_w
     s_w = st.session_state.s_w
     g_w = st.session_state.g_w
+    show_charts_first = st.session_state.setup_mode == "manual"
 
     st.markdown(
         f"""
@@ -1610,6 +1718,8 @@ def render_dashboard():
     if st.session_state.show_profile_builder:
         render_profile_builder(editing=True)
         st.write("")
+
+    charts_slot = st.container() if show_charts_first else None
 
     builder_col, insight_col = st.columns([1.08, 0.92], gap="large")
 
@@ -1725,7 +1835,7 @@ def render_dashboard():
                 """,
                 unsafe_allow_html=True,
             )
-            cols = st.columns([1.05, 1, 0.8])
+            cols = st.columns([1.1, 1], gap="large")
 
             with cols[0]:
                 name = st.text_input("Name", value=f"Asset {i}", key=f"name{i}")
@@ -1758,23 +1868,12 @@ def render_dashboard():
                 s_score = st.slider("Social", 0.0, 100.0, 65.0 if i == 1 else 55.0, key=f"s{i}")
                 g_score = st.slider("Governance", 0.0, 100.0, 60.0 if i == 1 else 45.0, key=f"g{i}")
 
-            with cols[2]:
-                esg_last = st.number_input(
-                    "Last year ESG",
-                    0.0,
-                    100.0,
-                    65.0 if i == 1 else 48.0,
-                    key=f"esg_last{i}",
-                )
-
             esg_composite = composite_esg(e_score, s_score, g_score, e_w, s_w, g_w) / 100
-            momentum = esg_momentum(composite_esg(e_score, s_score, g_score, e_w, s_w, g_w), esg_last)
-            adjusted_esg = min(esg_composite + 0.05 * momentum, 1.0)
+            adjusted_esg = esg_composite
             is_excluded = sector in excluded_sectors
 
             st.caption(
-                f"Composite ESG: {esg_composite * 100:.1f} [{esg_rating(esg_composite)}] | "
-                f"Momentum: {momentum * 100:+.1f}% | Adjusted ESG: {adjusted_esg * 100:.1f}"
+                f"Composite ESG used in the optimiser: {esg_composite * 100:.1f} [{esg_rating(esg_composite)}]"
             )
 
             if esg_composite >= 0.60 and g_score / 100 < 0.35:
@@ -1793,9 +1892,7 @@ def render_dashboard():
                 "e": e_score,
                 "s": s_score,
                 "g": g_score,
-                "esg_last": esg_last,
                 "esg_c": esg_composite,
-                "mom": momentum,
                 "esg_a": adjusted_esg,
                 "is_excluded": is_excluded,
             }
@@ -1920,6 +2017,18 @@ def render_dashboard():
             ", ".join(excluded_sector_labels()),
         )
 
+    if show_charts_first and charts_slot is not None:
+        with charts_slot:
+            render_investor_charts_section(
+                both_excluded,
+                force_w1,
+                results,
+                a1,
+                a2,
+                invest,
+                "Investor Charts",
+            )
+
     with insight_col:
         st.markdown(
             """
@@ -1955,9 +2064,8 @@ def render_dashboard():
                 """
                 1. GreenVest starts with the environmental, social, and governance sub-scores you enter for each asset.
                 2. Those pillar scores are combined into one composite ESG score using the investor's own E, S, and G priority weights.
-                3. A modest momentum adjustment is applied by comparing today's composite ESG score with last year's ESG level, which gives improving companies some credit without overpowering the model.
-                4. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`, so return, risk, and sustainability all matter at the same time.
-                5. GreenVest also enforces sector exclusions and raises a greenwashing warning when the overall ESG score looks strong but governance is weak.
+                3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`, so return, risk, and sustainability all matter at the same time.
+                4. GreenVest also enforces sector exclusions and raises a greenwashing warning when the overall ESG score looks strong but governance is weak.
                 """
             )
 
@@ -2024,25 +2132,6 @@ def render_dashboard():
             else:
                 st.success("The current sustainable preference set does not create a meaningful return penalty in this two-asset setup.")
 
-            esg_df = pd.DataFrame(
-                {
-                    "Pillar": ["Environmental", "Social", "Governance", "Composite", "Adjusted"],
-                    a1["name"]: [a1["e"], a1["s"], a1["g"], f"{a1['esg_c'] * 100:.1f}", f"{a1['esg_a'] * 100:.1f}"],
-                    a2["name"]: [a2["e"], a2["s"], a2["g"], f"{a2['esg_c'] * 100:.1f}", f"{a2['esg_a'] * 100:.1f}"],
-                    "Investor weight": [f"{e_w}/5", f"{s_w}/5", f"{g_w}/5", "-", "-"],
-                }
-            )
-
-            st.write("")
-            st.markdown(
-                """
-                <div class="section-kicker">ESG detail</div>
-                <h4 style="margin:0.2rem 0 0.6rem;">Pillar-level comparison</h4>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.dataframe(esg_df, use_container_width=True, hide_index=True)
-
             checkpoint_years = [5, 10, 20, 30]
             checkpoint_df = pd.DataFrame(
                 {
@@ -2054,6 +2143,20 @@ def render_dashboard():
                 checkpoint_df["50 / 50"] = [
                     f"GBP {future_value(invest, results['benchmark_return'], year):,.0f}" for year in checkpoint_years
                 ]
+
+            if results["benchmark_return"] is not None:
+                recommendation_30 = future_value(invest, results["mu_opt"], 30)
+                benchmark_30 = future_value(invest, results["benchmark_return"], 30)
+                if recommendation_30 > benchmark_30:
+                    st.success(
+                        f"Based on the current assumptions, our recommendation is projected to outperform the 50 / 50 reference by GBP {recommendation_30 - benchmark_30:,.0f} over 30 years."
+                    )
+                elif benchmark_30 > recommendation_30:
+                    st.info(
+                        f"Based on the current assumptions, the 50 / 50 reference projects GBP {benchmark_30 - recommendation_30:,.0f} more over 30 years, so a balanced split may be the stronger fit."
+                    )
+                else:
+                    st.info("Based on the current assumptions, the recommendation and the 50 / 50 reference project the same long-run value.")
 
             with st.expander("Projection checkpoints", expanded=False):
                 st.dataframe(checkpoint_df, use_container_width=True, hide_index=True)
@@ -2068,68 +2171,15 @@ def render_dashboard():
                     use_container_width=True,
                 )
 
-    st.write("")
-    st.markdown(
-        """
-        <div class="section-kicker">Visual story</div>
-        <h3 class="section-title">Two clearer charts for investors</h3>
-        <p class="section-copy">
-            The chart area now focuses on the two visuals that matter most: where the efficient sustainable portfolio sits,
-            and how the chosen strategy compounds over time.
-        </p>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    chart_cols = st.columns(2, gap="large")
-    if both_excluded:
-        with chart_cols[0]:
-            st.error("Frontier chart unavailable until at least one asset falls outside the excluded sectors.")
-        with chart_cols[1]:
-            st.info("Future value projection will appear again once the portfolio becomes investable.")
-        return
-
-    if force_w1 is None:
-        frontier_fig = build_frontier_chart(
-            results["sigma_grid"],
-            results["esg_adjusted_grid"],
-            results["esg_grid"],
-            results["sigma_opt"],
-            results["esg_adjusted_grid"][results["idx"]],
-            results["sigma_ms"][results["idx_financial"]],
-            results["esg_adjusted_ms"][results["idx_financial"]],
-            results["sigma_grid"][results["idx_low_risk"]],
-            results["esg_adjusted_grid"][results["idx_low_risk"]],
-        )
-        with chart_cols[0]:
-            st.markdown("#### ESG efficient frontier")
-            st.pyplot(frontier_fig)
-            plt.close(frontier_fig)
-            st.markdown(
-                '<div class="chart-caption">Legend markers and colors have been reduced so the data itself stays in focus.</div>',
-                unsafe_allow_html=True,
-            )
-    else:
-        with chart_cols[0]:
-            st.markdown("#### ESG efficient frontier")
-            st.info(
-                "The ESG efficient frontier only appears when both assets remain investable. Remove the exclusion to compare mixes again."
-            )
-
-    selected_label = a1["name"] if results["w1"] >= results["w2"] else a2["name"]
-    future_fig = build_future_value_chart(
-        invest,
-        results["mu_opt"],
-        benchmark_return=results["benchmark_return"],
-        selected_label=selected_label,
-    )
-    with chart_cols[1]:
-        st.markdown("#### Future value projection")
-        st.pyplot(future_fig)
-        plt.close(future_fig)
-        st.markdown(
-            '<div class="chart-caption">Projected values use the expected return inputs you set above, so investors can test scenarios instantly.</div>',
-            unsafe_allow_html=True,
+    if not show_charts_first:
+        render_investor_charts_section(
+            both_excluded,
+            force_w1,
+            results,
+            a1,
+            a2,
+            invest,
+            "Investor Charts",
         )
 
 
