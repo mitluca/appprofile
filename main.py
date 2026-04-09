@@ -42,7 +42,7 @@ SECTORS = [
 
 REVIEWS = [
     {
-        "author": "Blue Hoirzon",
+        "author": "BlueHorizon",
         "quote": (
             "We absolutely love GreenVest. Our own app is striving to become like "
             "this one because the experience feels polished, trustworthy, and easy to follow."
@@ -67,6 +67,26 @@ REVIEWS = [
         "quote": (
             "I like how GreenVest keeps the important information front and center. "
             "It feels calm, modern, and professional."
+        ),
+    },
+    {
+        "author": "Anonymous Investor II",
+        "quote": (
+            "The journey feels calm and focused. I can talk through sustainable choices "
+            "without losing sight of return and risk."
+        ),
+    },
+    {
+        "author": "Anonymous Investor III",
+        "quote": (
+            "GreenVest makes portfolio trade-offs easier to explain. The visuals feel much "
+            "more investor-ready than most sustainability tools."
+        ),
+    },
+    {
+        "author": "Anonymous Investor IV",
+        "quote": (
+            "This is one of the few ESG tools that feels polished enough for a real client conversation."
         ),
     },
     {
@@ -165,7 +185,7 @@ def clear_query_params():
         st.experimental_set_query_params()
 
 
-def go_home():
+def reset_home_state():
     reset_prefixes = (
         "manual_",
         "curated_",
@@ -217,6 +237,11 @@ def go_home():
     st.session_state.asset2_ticker = "MSFT"
     st.session_state.generated_signature = None
     clear_query_params()
+
+
+def go_home():
+    reset_home_state()
+    st.session_state.show_loader = True
     st.rerun()
 
 
@@ -453,13 +478,21 @@ def inject_styles():
                 gap: 0.18rem;
             }
 
+            .hero-welcome-label {
+                font-size: 0.82rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.14em;
+                color: var(--green-700);
+            }
+
             .hero-logo {
-                width: 76px;
-                height: 76px;
+                width: 72px;
+                height: 72px;
                 object-fit: contain;
                 filter: drop-shadow(0 10px 20px rgba(31, 88, 58, 0.16));
                 flex-shrink: 0;
-                transform: translateY(0);
+                transform: translateY(1px);
             }
 
             .hero-kicker,
@@ -474,10 +507,6 @@ def inject_styles():
                 color: var(--green-700);
             }
 
-            .hero-brand-copy .hero-kicker {
-                margin-bottom: 0.1rem;
-            }
-
             .hero-kicker::before,
             .section-kicker::before {
                 content: "";
@@ -488,9 +517,12 @@ def inject_styles():
             }
 
             .hero-title {
-                font-size: clamp(2.9rem, 5vw, 4.2rem);
-                margin: 0.2rem 0 0.5rem;
-                line-height: 0.95;
+                font-family: "Manrope", "Trebuchet MS", sans-serif;
+                font-size: clamp(3.7rem, 6vw, 5.3rem);
+                font-weight: 800;
+                letter-spacing: -0.05em;
+                margin: 0;
+                line-height: 0.92;
             }
 
             .hero-brand-row .hero-title {
@@ -518,8 +550,9 @@ def inject_styles():
             .hero-button {
                 appearance: none;
                 text-decoration: none !important;
-                color: white !important;
+                color: #ffffff !important;
                 font-weight: 800;
+                letter-spacing: 0.01em;
                 padding: 0.95rem 1.45rem;
                 border-radius: 18px;
                 min-width: 230px;
@@ -528,15 +561,16 @@ def inject_styles():
                 border: 1px solid rgba(255, 255, 255, 0.46);
                 cursor: pointer;
                 font-family: "Manrope", "Trebuchet MS", sans-serif;
-                font-size: 1.03rem;
+                font-size: 1.05rem;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
             }
 
             .hero-button.green {
-                background: linear-gradient(135deg, #257449 0%, #4eb772 100%);
+                background: linear-gradient(135deg, #1f633d 0%, #43a364 100%);
             }
 
             .hero-button.blue {
-                background: linear-gradient(135deg, #2d76cf 0%, #5cb8ef 100%);
+                background: linear-gradient(135deg, #225ea9 0%, #4c9ddb 100%);
             }
 
             .hero-button:hover {
@@ -741,6 +775,7 @@ def inject_styles():
             .profile-banner {
                 padding: 1.35rem 1.45rem;
                 margin: 0 0 1rem;
+                background: linear-gradient(180deg, rgba(241, 248, 244, 0.98), rgba(234, 244, 252, 0.96));
             }
 
             .guide-mascot-card {
@@ -917,8 +952,9 @@ def inject_styles():
                 border-radius: 16px;
                 border: 1px solid rgba(46, 123, 83, 0.12);
                 background: linear-gradient(135deg, #256e45, #49a96b);
-                color: white;
-                font-weight: 700;
+                color: #ffffff;
+                font-weight: 800;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
                 padding: 0.7rem 1rem;
                 box-shadow: 0 14px 22px rgba(37, 100, 68, 0.12);
             }
@@ -986,13 +1022,62 @@ def inject_styles():
                 background: rgba(255, 255, 255, 0.92);
                 border: 1px solid rgba(46, 123, 83, 0.12);
                 border-radius: 22px;
-                padding: 1rem 1.05rem;
+                padding: 0.85rem 1rem 0.95rem;
                 box-shadow: 0 14px 24px rgba(24, 60, 43, 0.06);
-                margin-top: 1rem;
+                margin-top: 0.75rem;
             }
 
             .projection-card h4 {
-                margin: 0.2rem 0 0.55rem;
+                font-size: 1rem;
+                margin: 0.1rem 0 0.35rem;
+            }
+
+            .dashboard-utility {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 1rem;
+                margin: 0.15rem 0 1rem;
+            }
+
+            .dashboard-home-link {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 60px;
+                height: 60px;
+                border-radius: 18px;
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(46, 123, 83, 0.12);
+                box-shadow: 0 12px 24px rgba(24, 60, 43, 0.08);
+            }
+
+            .dashboard-home-link img {
+                width: 36px;
+                height: 36px;
+                object-fit: contain;
+            }
+
+            div[data-testid="stDialog"] [role="dialog"] {
+                background: linear-gradient(180deg, rgba(241, 248, 244, 0.98), rgba(234, 244, 252, 0.98));
+                border: 1px solid rgba(46, 123, 83, 0.12);
+                border-radius: 28px;
+                box-shadow: 0 24px 60px rgba(26, 68, 47, 0.16);
+            }
+
+            div[data-testid="stDialog"] .block-container {
+                padding-top: 0.75rem;
+                padding-bottom: 1rem;
+            }
+
+            .mascot-answer {
+                margin-top: 0.75rem;
+                padding: 0.7rem 0.8rem;
+                border-radius: 16px;
+                background: rgba(255, 255, 255, 0.72);
+                border: 1px solid rgba(46, 123, 83, 0.1);
+                color: var(--ink-700);
+                line-height: 1.6;
             }
 
             @media (max-width: 980px) {
@@ -1027,6 +1112,17 @@ def inject_styles():
                 border-radius: 0;
                 background: url("{LOGO_DATA_URI}") center / contain no-repeat;
             }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        """
+        <style>
+            .hero-welcome-label::before {
+                display: none !important;
+                content: none !important;
+            }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1965,11 +2061,19 @@ def render_profile_builder(editing=False):
     is_manual_mode = st.session_state.setup_mode == "manual"
     heading = "Investor Preference Builder" if not editing else "Update Investor Preferences"
     if editing:
-        body = "Adjust the profile inline and then click generate again to refresh the portfolio."
+        body = "Adjust your preferences here, then click generate again to refresh your portfolio."
     elif is_manual_mode:
-        body = "Set the investor preferences first, then enter your own expected returns, risk, and ESG assumptions."
+        body = "Set your investor preferences first, then enter your own expected returns, risk, and ESG assumptions."
     else:
-        body = "Complete the investor profile first, then choose eligible assets and generate the portfolio."
+        body = "Complete your investor profile first, then choose eligible assets and generate your portfolio."
+
+    mascot_answers = {
+        1: "Choose the answer that feels closest to how you would really react if markets fell sharply.",
+        2: "This tells GreenVest whether your priority is stability, income, long-term growth, or stronger upside.",
+        3: "A longer horizon usually gives your portfolio more room to absorb short-term volatility.",
+        4: "Your goal helps decide how strongly the portfolio should lean toward growth versus sustainability.",
+        5: "Use these sliders to show how much you want environmental, social, and governance factors to shape your portfolio.",
+    }
 
     st.markdown(
         f"""
@@ -1981,18 +2085,18 @@ def render_profile_builder(editing=False):
         """,
         unsafe_allow_html=True,
     )
-    content_col, mascot_col = st.columns([1.28, 0.32], gap="large")
+    content_col, mascot_col = st.columns([1.18, 0.38], gap="large")
 
     with mascot_col:
         st.markdown(
             f"""
             <div class="guide-mascot-card">
                 <div class="section-kicker">Investor guide</div>
-                <h4>Preference helper</h4>
+                <h4>Your guide</h4>
                 <p>
-                    Use this area to guide the investor through the answers that shape risk,
-                    sustainability priorities, and sector exclusions.
+                    The mascot can help explain what each question means before you move to the next step.
                 </p>
+                <div class="mascot-answer"><strong>Mascot answer:</strong> {mascot_answers[step]}</div>
                 <img class="guide-mascot-image" src="{QUESTION_DATA_URI}" alt="Question mascot">
             </div>
             """,
@@ -2016,7 +2120,7 @@ def render_profile_builder(editing=False):
                 }[x],
                 index=st.session_state.q1 - 1,
             )
-            st.caption("This tells GreenVest how much short-term volatility feels comfortable for the investor.")
+            st.caption("This tells GreenVest how much short-term volatility feels comfortable for you.")
             left, _, right = st.columns([1, 1.4, 1])
             if editing:
                 with left:
@@ -2057,7 +2161,7 @@ def render_profile_builder(editing=False):
 
         elif step == 3:
             choice = st.radio(
-                "How long does the investor plan to stay invested?",
+                "How long do you plan to stay invested?",
                 options=[1, 2, 3, 4],
                 format_func=lambda x: {
                     1: "Less than 2 years",
@@ -2068,7 +2172,7 @@ def render_profile_builder(editing=False):
                 index=st.session_state.q3 - 1,
             )
             st.caption(
-                "A longer horizon allows GreenVest to tolerate more short-term movement for better long-term upside."
+                "Your time horizon tells GreenVest how much short-term movement you can tolerate for long-term upside."
             )
             left, _, right = st.columns([1, 1.4, 1])
             with left:
@@ -2084,7 +2188,7 @@ def render_profile_builder(editing=False):
 
         elif step == 4:
             choice = st.radio(
-                "What is the investor working toward?",
+                "What are you working toward?",
                 options=[1, 2, 3, 4],
                 format_func=lambda x: {
                     1: "Retirement - long-term financial security",
@@ -2094,7 +2198,7 @@ def render_profile_builder(editing=False):
                 }[x],
                 index=st.session_state.goal - 1,
             )
-            st.caption("This final objective helps decide how much explicit weight ESG receives in the utility score.")
+            st.caption("Your goal helps decide how much explicit weight ESG receives in the utility score.")
             left, _, right = st.columns([1, 1.4, 1])
             with left:
                 if st.button("Back", key="profile_back_4"):
@@ -2109,7 +2213,7 @@ def render_profile_builder(editing=False):
 
         else:
             st.markdown("#### How much should GreenVest care about each ESG pillar?")
-            st.caption("Set each pillar from 0 to 5. These weights shape the composite ESG score.")
+            st.caption("Set each pillar from 0 to 5. These weights shape your composite ESG score.")
             e_w = st.slider("Environmental priority", 0, 5, st.session_state.e_w)
             s_w = st.slider("Social priority", 0, 5, st.session_state.s_w)
             g_w = st.slider("Governance priority", 0, 5, st.session_state.g_w)
@@ -2167,7 +2271,7 @@ def render_landing_page():
                     <div class="hero-brand-row">
                         <img class="hero-logo" src="{LOGO_DATA_URI}" alt="GreenVest logo">
                         <div class="hero-brand-copy">
-                            <div class="hero-kicker">Welcome to GreenVest</div>
+                            <div class="hero-welcome-label">Welcome to GreenVest</div>
                             <h1 class="hero-title">GreenVest</h1>
                         </div>
                     </div>
@@ -2221,7 +2325,6 @@ def render_landing_page():
         <div class="fact-grid">
             <div class="fact-card">
                 <div class="section-kicker">What It Is</div>
-                <h4>What sustainable investing means</h4>
                 <p>
                     Sustainable investing looks at financial return alongside environmental, social,
                     and governance performance. Instead of asking only "what could this earn?",
@@ -2230,7 +2333,6 @@ def render_landing_page():
             </div>
             <div class="fact-card">
                 <div class="section-kicker">Why It Matters</div>
-                <h4>Why it matters</h4>
                 <p>
                     Investors often use sustainable strategies to align with their values, manage long-run
                     regulatory and reputational risk, and back companies that may be better positioned for
@@ -2248,9 +2350,7 @@ def render_landing_page():
             <div class="review-intro">
                 <div>
                     <div class="section-kicker">Investor reactions</div>
-                    <h3>Scrolling social proof for the welcome page</h3>
                 </div>
-                <div class="hero-note">Reviews drift left to right and fade softly at the edges.</div>
             </div>
             <div class="review-rail">
                 <div class="review-track">
@@ -2269,6 +2369,7 @@ def initialize_session_state():
         "show_profile_builder": False,
         "setup_mode": None,
         "loader_complete": False,
+        "show_loader": False,
         "onboarding_done": False,
         "onboarding_step": 1,
         "q1": 3,
@@ -2301,8 +2402,15 @@ def initialize_session_state():
 
 
 def handle_entry_actions():
+    nav = get_query_param("nav")
+    if nav == "home":
+        reset_home_state()
+        st.session_state.show_loader = True
+        return
+
     action = get_query_param("launch")
     if action == "manual":
+        st.session_state.show_loader = True
         st.session_state.entered_app = True
         st.session_state.onboarding_done = False
         st.session_state.setup_mode = "manual"
@@ -2310,9 +2418,10 @@ def handle_entry_actions():
         st.session_state.onboarding_step = 1
         st.session_state.generated_signature = None
         clear_query_params()
-        st.rerun()
+        return
 
     if action == "guided":
+        st.session_state.show_loader = True
         st.session_state.entered_app = True
         st.session_state.show_profile_builder = True
         st.session_state.setup_mode = "guided"
@@ -2320,7 +2429,7 @@ def handle_entry_actions():
         st.session_state.onboarding_done = False
         st.session_state.generated_signature = None
         clear_query_params()
-        st.rerun()
+        return
 
 
 def render_dashboard():
@@ -2331,32 +2440,14 @@ def render_dashboard():
     e_w = st.session_state.e_w
     s_w = st.session_state.s_w
     g_w = st.session_state.g_w
-    mode_title = "Create your sustainable portfolio" if is_manual_mode else "Generate a portfolio from investor preferences"
-    mode_copy = (
-        "Enter your own expected returns, standard deviations, and ESG assumptions, then click generate."
-        if is_manual_mode
-        else "Choose eligible assets, then click generate to turn the investor profile into a recommended portfolio."
-    )
 
-    st.markdown(
-        f"""
-        <section class="dashboard-hero">
-            <div class="dashboard-head">
-                <div>
-                    <h2 class="dashboard-title">{mode_title}</h2>
-                    <p class="dashboard-copy">{mode_copy}</p>
-                </div>
-            </div>
-        </section>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    top_actions = st.columns([1, 1, 1], gap="large")
-    with top_actions[0]:
-        if st.button("Go Back Home"):
-            go_home()
-    with top_actions[2]:
+    utility_cols = st.columns([0.14, 0.62, 0.24], gap="large")
+    with utility_cols[0]:
+        st.markdown(
+            f'<div class="dashboard-utility"><a class="dashboard-home-link" href="?nav=home" target="_self"><img src="{LOGO_DATA_URI}" alt="Go back home"></a></div>',
+            unsafe_allow_html=True,
+        )
+    with utility_cols[2]:
         if st.button("Update Preferences"):
             st.session_state.show_profile_builder = True
             st.session_state.onboarding_step = 1
@@ -2365,7 +2456,6 @@ def render_dashboard():
     if st.session_state.show_profile_builder:
         render_profile_builder(editing=st.session_state.onboarding_done)
 
-    charts_slot = st.container()
     builder_col, insight_col = st.columns([1.08, 0.92], gap="large")
 
     current_signature = None
@@ -2374,11 +2464,11 @@ def render_dashboard():
     projection_slot = None
 
     with builder_col:
-        builder_heading = "Enter your asset assumptions" if is_manual_mode else "Choose the assets to compare"
+        builder_heading = "Enter your asset assumptions" if is_manual_mode else "Choose your assets"
         builder_copy = (
-            "This path is for investors who want to enter their own expected returns, risk levels, and ESG inputs."
+            "Set your investor preferences first, then enter your own expected returns, standard deviations, and ESG inputs."
             if is_manual_mode
-            else "This path uses the investor profile to guide the optimisation while you choose from eligible assets."
+            else "Set your investor preferences first, then choose from the eligible assets GreenVest can recommend."
         )
         st.markdown(
             f"""
@@ -2396,16 +2486,16 @@ def render_dashboard():
 
             gamma_cols = st.columns([4, 1])
             with gamma_cols[0]:
-                st.slider(
-                    "Risk aversion",
-                    1.0,
-                    10.0,
-                    st.session_state.gamma_val,
-                    0.1,
-                    key="_g_sl",
-                    on_change=sync_gamma_slider,
-                    help="Higher gamma means the investor is more sensitive to portfolio risk.",
-                )
+                    st.slider(
+                        "Risk aversion",
+                        1.0,
+                        10.0,
+                        st.session_state.gamma_val,
+                        0.1,
+                        key="_g_sl",
+                        on_change=sync_gamma_slider,
+                        help="Higher gamma means you are more sensitive to portfolio risk.",
+                    )
             with gamma_cols[1]:
                 st.number_input(
                     "gamma exact",
@@ -2477,14 +2567,27 @@ def render_dashboard():
         )
 
         excluded_sectors = get_excluded_sectors()
-        if is_manual_mode:
-            a1 = render_manual_asset_input(1, excluded_sectors)
-            st.write("")
-            a2 = render_manual_asset_input(2, excluded_sectors)
-        else:
-            a1 = render_asset_selector(1, excluded_sectors, allowed_modes=["curated", "search"], filter_excluded_curated=True)
-            st.write("")
-            a2 = render_asset_selector(2, excluded_sectors, allowed_modes=["curated", "search"], filter_excluded_curated=True)
+        asset_cols = st.columns(2, gap="large")
+        with asset_cols[0]:
+            if is_manual_mode:
+                a1 = render_manual_asset_input(1, excluded_sectors)
+            else:
+                a1 = render_asset_selector(
+                    1,
+                    excluded_sectors,
+                    allowed_modes=["curated", "search"],
+                    filter_excluded_curated=True,
+                )
+        with asset_cols[1]:
+            if is_manual_mode:
+                a2 = render_manual_asset_input(2, excluded_sectors)
+            else:
+                a2 = render_asset_selector(
+                    2,
+                    excluded_sectors,
+                    allowed_modes=["curated", "search"],
+                    filter_excluded_curated=True,
+                )
 
         st.write("")
         rho = st.slider(
@@ -2514,83 +2617,17 @@ def render_dashboard():
             st.rerun()
 
         if not st.session_state.onboarding_done:
-            st.info("Complete the investor preferences popup first, then generate the portfolio.")
+            st.info("Complete your investor preferences popup first, then generate your portfolio.")
         elif a1 is None or a2 is None:
             st.info("Complete both asset sections to unlock the portfolio recommendation.")
-        elif st.session_state.generated_signature != current_signature:
-            st.info("Click Generate Portfolio to show the latest recommendation, projection, and charts.")
 
         projection_slot = st.container()
 
     if a1 is None or a2 is None:
-        with charts_slot:
-            st.markdown(
-                """
-                <div class="section-kicker">Investor Charts</div>
-                <h3 class="section-title">Investor Charts</h3>
-                <p class="section-copy">
-                    Complete both asset selections to unlock the ESG efficient frontier and future value view.
-                </p>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.info("Choose two assets first, then click generate to display the charts and recommendation.")
-        with insight_col:
-            st.markdown(
-                """
-                <div class="section-kicker">Portfolio recommendation</div>
-                <h3 class="section-title">Portfolio output</h3>
-                <p class="section-copy">
-                    The portfolio recommendation appears here after the investor preferences are complete and both assets have been entered.
-                </p>
-                """,
-                unsafe_allow_html=True,
-            )
-            with st.expander("How GreenVest scores ESG", expanded=False):
-                st.markdown(
-                    """
-                    1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
-                    2. Those pillar scores are combined into one composite ESG score using the investor's own E, S, and G priority weights.
-                    3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`.
-                    4. Sector exclusions are enforced so blocked sectors cannot be recommended.
-                    """
-                )
         return
 
     generated = st.session_state.generated_signature == current_signature
     if not generated:
-        with charts_slot:
-            st.markdown(
-                """
-                <div class="section-kicker">Investor Charts</div>
-                <h3 class="section-title">Investor Charts</h3>
-                <p class="section-copy">
-                    Click generate to show the ESG efficient frontier, future value chart, and export button.
-                </p>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.info("The charts appear after the investor clicks Generate Portfolio.")
-        with insight_col:
-            st.markdown(
-                """
-                <div class="section-kicker">Portfolio recommendation</div>
-                <h3 class="section-title">Portfolio output</h3>
-                <p class="section-copy">
-                    The recommendation, metrics, and narrative appear here after generation.
-                </p>
-                """,
-                unsafe_allow_html=True,
-            )
-            with st.expander("How GreenVest scores ESG", expanded=False):
-                st.markdown(
-                    """
-                    1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
-                    2. Those pillar scores are combined into one composite ESG score using the investor's own E, S, and G priority weights.
-                    3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`.
-                    4. Sector exclusions are enforced so blocked sectors cannot be recommended.
-                    """
-                )
         return
 
     both_excluded = a1["is_excluded"] and a2["is_excluded"]
@@ -2725,30 +2762,17 @@ def render_dashboard():
                 benchmark_message_kind = "info"
                 benchmark_message_text = "GreenVest and the 50 / 50 reference project the same 30-year value under the current assumptions."
 
-    with charts_slot:
-        if both_excluded:
-            st.markdown(
-                """
-                <div class="section-kicker">Investor Charts</div>
-                <h3 class="section-title">Investor Charts</h3>
-                <p class="section-copy">
-                    The chart area is ready, but both selected assets are blocked by the current sector exclusions.
-                </p>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.error("Both selected assets are excluded, so GreenVest cannot generate the ESG efficient frontier.")
-        else:
-            render_investor_charts_section(
-                both_excluded,
-                force_w1,
-                results,
-                a1,
-                a2,
-                invest,
-                "Investor Charts",
-                summary_pdf_bytes,
-            )
+    if not both_excluded:
+        render_investor_charts_section(
+            both_excluded,
+            force_w1,
+            results,
+            a1,
+            a2,
+            invest,
+            "Investor Charts",
+            summary_pdf_bytes,
+        )
 
     with projection_slot:
         if both_excluded:
@@ -2756,7 +2780,7 @@ def render_dashboard():
                 """
                 <div class="projection-card">
                     <div class="section-kicker">Projection</div>
-                    <h4>Projection checkpoints</h4>
+                    <h4>Checkpoint outlook</h4>
                     <p class="section-copy">Projection values will appear here once at least one selected asset is eligible for recommendation.</p>
                 </div>
                 """,
@@ -2767,7 +2791,7 @@ def render_dashboard():
                 """
                 <div class="projection-card">
                     <div class="section-kicker">Projection</div>
-                    <h4>Projection checkpoints</h4>
+                    <h4>Checkpoint outlook</h4>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -2795,7 +2819,7 @@ def render_dashboard():
             st.markdown(
                 """
                 1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
-                2. Those pillar scores are combined into one composite ESG score using the investor's own E, S, and G priority weights.
+                2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
                 3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`.
                 4. Sector exclusions are enforced so blocked sectors cannot be recommended.
                 """
@@ -2872,6 +2896,9 @@ handle_entry_actions()
 if not st.session_state.loader_complete:
     st.session_state.loader_complete = True
     render_loader()
+elif st.session_state.show_loader:
+    render_loader()
+    st.session_state.show_loader = False
 
 if not st.session_state.entered_app:
     render_landing_page()
