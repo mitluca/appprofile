@@ -112,33 +112,239 @@ CURATED_ASSETS = [
     {"name": "Alphabet", "ticker": "GOOGL", "sector": "Technology", "mu": 0.138, "sigma": 0.230, "e": 71, "s": 65, "g": 69},
     {"name": "Meta", "ticker": "META", "sector": "Technology", "mu": 0.175, "sigma": 0.350, "e": 55, "s": 48, "g": 52},
     {"name": "Samsung", "ticker": "005930.KS", "sector": "Technology", "mu": 0.080, "sigma": 0.280, "e": 68, "s": 62, "g": 65},
+    {"name": "ASML", "ticker": "ASML", "sector": "Technology", "mu": 0.195, "sigma": 0.310, "e": 78, "s": 76, "g": 80},
+    {"name": "Taiwan Semiconductor", "ticker": "TSM", "sector": "Technology", "mu": 0.155, "sigma": 0.340, "e": 70, "s": 64, "g": 72},
+    {"name": "Salesforce", "ticker": "CRM", "sector": "Technology", "mu": 0.128, "sigma": 0.295, "e": 76, "s": 78, "g": 74},
+    {"name": "Adobe", "ticker": "ADBE", "sector": "Technology", "mu": 0.142, "sigma": 0.285, "e": 74, "s": 72, "g": 76},
+    {"name": "SAP", "ticker": "SAP", "sector": "Technology", "mu": 0.118, "sigma": 0.240, "e": 80, "s": 77, "g": 82},
+    {"name": "Oracle", "ticker": "ORCL", "sector": "Technology", "mu": 0.132, "sigma": 0.255, "e": 62, "s": 60, "g": 68},
+    {"name": "Accenture", "ticker": "ACN", "sector": "Technology", "mu": 0.122, "sigma": 0.220, "e": 82, "s": 84, "g": 80},
+    {"name": "Infosys", "ticker": "INFY", "sector": "Technology", "mu": 0.095, "sigma": 0.255, "e": 75, "s": 72, "g": 74},
+    {"name": "Qualcomm", "ticker": "QCOM", "sector": "Technology", "mu": 0.138, "sigma": 0.310, "e": 66, "s": 63, "g": 70},
+    {"name": "Texas Instruments", "ticker": "TXN", "sector": "Technology", "mu": 0.112, "sigma": 0.230, "e": 69, "s": 65, "g": 72},
+    {"name": "Intel", "ticker": "INTC", "sector": "Technology", "mu": 0.042, "sigma": 0.310, "e": 72, "s": 68, "g": 70},
+    {"name": "Broadcom", "ticker": "AVGO", "sector": "Technology", "mu": 0.210, "sigma": 0.330, "e": 60, "s": 58, "g": 66},
+    {"name": "Shopify", "ticker": "SHOP", "sector": "Technology", "mu": 0.185, "sigma": 0.480, "e": 64, "s": 68, "g": 62},
+    {"name": "Capgemini", "ticker": "CGEMY", "sector": "Technology", "mu": 0.108, "sigma": 0.235, "e": 78, "s": 80, "g": 76},
+
     {"name": "Johnson & Johnson", "ticker": "JNJ", "sector": "Healthcare", "mu": 0.072, "sigma": 0.145, "e": 70, "s": 75, "g": 77},
     {"name": "GSK", "ticker": "GSK", "sector": "Healthcare", "mu": 0.065, "sigma": 0.180, "e": 66, "s": 72, "g": 68},
     {"name": "AstraZeneca", "ticker": "AZN", "sector": "Healthcare", "mu": 0.095, "sigma": 0.195, "e": 74, "s": 78, "g": 76},
     {"name": "Novo Nordisk", "ticker": "NVO", "sector": "Healthcare", "mu": 0.185, "sigma": 0.290, "e": 80, "s": 82, "g": 83},
+    {"name": "Roche", "ticker": "RHHBY", "sector": "Healthcare", "mu": 0.068, "sigma": 0.175, "e": 76, "s": 80, "g": 78},
+    {"name": "Novartis", "ticker": "NVS", "sector": "Healthcare", "mu": 0.078, "sigma": 0.180, "e": 73, "s": 76, "g": 74},
+    {"name": "Pfizer", "ticker": "PFE", "sector": "Healthcare", "mu": 0.048, "sigma": 0.195, "e": 68, "s": 72, "g": 70},
+    {"name": "Merck & Co", "ticker": "MRK", "sector": "Healthcare", "mu": 0.092, "sigma": 0.188, "e": 70, "s": 73, "g": 72},
+    {"name": "Eli Lilly", "ticker": "LLY", "sector": "Healthcare", "mu": 0.228, "sigma": 0.285, "e": 72, "s": 74, "g": 76},
+    {"name": "Abbott Laboratories", "ticker": "ABT", "sector": "Healthcare", "mu": 0.088, "sigma": 0.190, "e": 72, "s": 74, "g": 76},
+    {"name": "Medtronic", "ticker": "MDT", "sector": "Healthcare", "mu": 0.058, "sigma": 0.185, "e": 68, "s": 70, "g": 72},
+    {"name": "Sanofi", "ticker": "SNY", "sector": "Healthcare", "mu": 0.072, "sigma": 0.178, "e": 72, "s": 74, "g": 70},
+    {"name": "Fresenius", "ticker": "FSNUY", "sector": "Healthcare", "mu": 0.038, "sigma": 0.210, "e": 65, "s": 68, "g": 64},
+    {"name": "Becton Dickinson", "ticker": "BDX", "sector": "Healthcare", "mu": 0.075, "sigma": 0.185, "e": 70, "s": 72, "g": 74},
+
     {"name": "JPMorgan Chase", "ticker": "JPM", "sector": "Financial Services", "mu": 0.110, "sigma": 0.220, "e": 54, "s": 62, "g": 70},
     {"name": "HSBC", "ticker": "HSBC", "sector": "Financial Services", "mu": 0.082, "sigma": 0.195, "e": 58, "s": 60, "g": 65},
     {"name": "BlackRock", "ticker": "BLK", "sector": "Financial Services", "mu": 0.118, "sigma": 0.230, "e": 65, "s": 67, "g": 74},
+    {"name": "Goldman Sachs", "ticker": "GS", "sector": "Financial Services", "mu": 0.125, "sigma": 0.270, "e": 50, "s": 55, "g": 65},
+    {"name": "Morgan Stanley", "ticker": "MS", "sector": "Financial Services", "mu": 0.115, "sigma": 0.255, "e": 55, "s": 60, "g": 68},
+    {"name": "Visa", "ticker": "V", "sector": "Financial Services", "mu": 0.148, "sigma": 0.200, "e": 62, "s": 68, "g": 76},
+    {"name": "Mastercard", "ticker": "MA", "sector": "Financial Services", "mu": 0.152, "sigma": 0.205, "e": 64, "s": 70, "g": 78},
+    {"name": "Allianz", "ticker": "ALIZY", "sector": "Financial Services", "mu": 0.092, "sigma": 0.195, "e": 68, "s": 66, "g": 72},
+    {"name": "AXA", "ticker": "AXAHY", "sector": "Financial Services", "mu": 0.085, "sigma": 0.200, "e": 70, "s": 65, "g": 70},
+    {"name": "BNP Paribas", "ticker": "BNPQY", "sector": "Financial Services", "mu": 0.078, "sigma": 0.215, "e": 62, "s": 60, "g": 66},
+    {"name": "UBS Group", "ticker": "UBS", "sector": "Financial Services", "mu": 0.088, "sigma": 0.225, "e": 60, "s": 58, "g": 68},
+    {"name": "American Express", "ticker": "AXP", "sector": "Financial Services", "mu": 0.132, "sigma": 0.240, "e": 60, "s": 65, "g": 72},
+    {"name": "S&P Global", "ticker": "SPGI", "sector": "Financial Services", "mu": 0.158, "sigma": 0.230, "e": 72, "s": 70, "g": 78},
+
     {"name": "Unilever", "ticker": "UL", "sector": "Consumer Goods", "mu": 0.060, "sigma": 0.155, "e": 84, "s": 80, "g": 78},
     {"name": "Nestle", "ticker": "NSRGY", "sector": "Consumer Goods", "mu": 0.058, "sigma": 0.148, "e": 72, "s": 70, "g": 74},
+    {"name": "Procter & Gamble", "ticker": "PG", "sector": "Consumer Goods", "mu": 0.088, "sigma": 0.162, "e": 74, "s": 72, "g": 76},
+    {"name": "L'Oreal", "ticker": "LRLCY", "sector": "Consumer Goods", "mu": 0.105, "sigma": 0.195, "e": 82, "s": 78, "g": 80},
+    {"name": "Colgate-Palmolive", "ticker": "CL", "sector": "Consumer Goods", "mu": 0.075, "sigma": 0.158, "e": 72, "s": 70, "g": 72},
+    {"name": "Kering", "ticker": "PPRUY", "sector": "Consumer Goods", "mu": 0.092, "sigma": 0.265, "e": 78, "s": 72, "g": 74},
+    {"name": "LVMH", "ticker": "LVMUY", "sector": "Consumer Goods", "mu": 0.115, "sigma": 0.255, "e": 70, "s": 68, "g": 72},
+    {"name": "Danone", "ticker": "DANOY", "sector": "Consumer Goods", "mu": 0.042, "sigma": 0.175, "e": 80, "s": 76, "g": 74},
+    {"name": "Henkel", "ticker": "HENKY", "sector": "Consumer Goods", "mu": 0.048, "sigma": 0.178, "e": 76, "s": 72, "g": 74},
+    {"name": "Beiersdorf", "ticker": "BDRFY", "sector": "Consumer Goods", "mu": 0.085, "sigma": 0.182, "e": 80, "s": 76, "g": 78},
+    {"name": "Reckitt Benckiser", "ticker": "RBGLY", "sector": "Consumer Goods", "mu": 0.055, "sigma": 0.185, "e": 72, "s": 68, "g": 70},
+
     {"name": "Tesla", "ticker": "TSLA", "sector": "Clean Energy", "mu": 0.220, "sigma": 0.580, "e": 85, "s": 52, "g": 48},
     {"name": "Vestas Wind", "ticker": "VWDRY", "sector": "Clean Energy", "mu": 0.090, "sigma": 0.310, "e": 91, "s": 78, "g": 80},
     {"name": "Orsted", "ticker": "DNNGY", "sector": "Clean Energy", "mu": 0.075, "sigma": 0.280, "e": 93, "s": 76, "g": 79},
+    {"name": "Enphase Energy", "ticker": "ENPH", "sector": "Clean Energy", "mu": 0.245, "sigma": 0.560, "e": 88, "s": 72, "g": 74},
+    {"name": "First Solar", "ticker": "FSLR", "sector": "Clean Energy", "mu": 0.185, "sigma": 0.440, "e": 90, "s": 74, "g": 76},
+    {"name": "SolarEdge", "ticker": "SEDG", "sector": "Clean Energy", "mu": 0.125, "sigma": 0.520, "e": 86, "s": 70, "g": 72},
+    {"name": "Plug Power", "ticker": "PLUG", "sector": "Clean Energy", "mu": 0.048, "sigma": 0.680, "e": 84, "s": 66, "g": 60},
+    {"name": "Brookfield Renewable", "ticker": "BEP", "sector": "Clean Energy", "mu": 0.082, "sigma": 0.260, "e": 90, "s": 75, "g": 78},
+    {"name": "NextEra Energy", "ticker": "NEE", "sector": "Clean Energy", "mu": 0.098, "sigma": 0.220, "e": 88, "s": 74, "g": 76},
+    {"name": "Iberdrola", "ticker": "IBDRY", "sector": "Clean Energy", "mu": 0.088, "sigma": 0.210, "e": 90, "s": 76, "g": 78},
+    {"name": "Enel", "ticker": "ENLAY", "sector": "Clean Energy", "mu": 0.072, "sigma": 0.220, "e": 86, "s": 74, "g": 72},
+    {"name": "Acciona Energia", "ticker": "ACXIF", "sector": "Clean Energy", "mu": 0.065, "sigma": 0.285, "e": 88, "s": 72, "g": 70},
+    {"name": "Northland Power", "ticker": "NPIFF", "sector": "Clean Energy", "mu": 0.070, "sigma": 0.270, "e": 86, "s": 70, "g": 72},
+
     {"name": "Siemens", "ticker": "SIEGY", "sector": "Industrials", "mu": 0.098, "sigma": 0.215, "e": 76, "s": 73, "g": 77},
     {"name": "Schneider Electric", "ticker": "SBGSY", "sector": "Industrials", "mu": 0.112, "sigma": 0.225, "e": 88, "s": 80, "g": 82},
+    {"name": "ABB", "ticker": "ABB", "sector": "Industrials", "mu": 0.105, "sigma": 0.228, "e": 82, "s": 76, "g": 78},
+    {"name": "Honeywell", "ticker": "HON", "sector": "Industrials", "mu": 0.098, "sigma": 0.210, "e": 74, "s": 70, "g": 76},
+    {"name": "Caterpillar", "ticker": "CAT", "sector": "Industrials", "mu": 0.132, "sigma": 0.255, "e": 60, "s": 62, "g": 68},
+    {"name": "3M", "ticker": "MMM", "sector": "Industrials", "mu": 0.042, "sigma": 0.225, "e": 62, "s": 60, "g": 66},
+    {"name": "Rockwell Automation", "ticker": "ROK", "sector": "Industrials", "mu": 0.118, "sigma": 0.240, "e": 76, "s": 72, "g": 74},
+    {"name": "Xylem", "ticker": "XYL", "sector": "Industrials", "mu": 0.105, "sigma": 0.235, "e": 86, "s": 78, "g": 78},
+    {"name": "Alfa Laval", "ticker": "ALFVY", "sector": "Industrials", "mu": 0.092, "sigma": 0.220, "e": 80, "s": 74, "g": 76},
+    {"name": "Danaher", "ticker": "DHR", "sector": "Industrials", "mu": 0.118, "sigma": 0.225, "e": 74, "s": 72, "g": 78},
+    {"name": "Legrand", "ticker": "LGRVF", "sector": "Industrials", "mu": 0.102, "sigma": 0.215, "e": 82, "s": 76, "g": 78},
+    {"name": "Nibe Industrier", "ticker": "NIBEF", "sector": "Industrials", "mu": 0.085, "sigma": 0.260, "e": 84, "s": 74, "g": 76},
+    {"name": "Watts Water Technologies", "ticker": "WTS", "sector": "Industrials", "mu": 0.095, "sigma": 0.225, "e": 80, "s": 72, "g": 74},
+
+    {"name": "Prologis", "ticker": "PLD", "sector": "Real Estate", "mu": 0.092, "sigma": 0.200, "e": 72, "s": 68, "g": 73},
+    {"name": "American Tower", "ticker": "AMT", "sector": "Real Estate", "mu": 0.085, "sigma": 0.195, "e": 68, "s": 64, "g": 70},
+    {"name": "Segro", "ticker": "SEGXF", "sector": "Real Estate", "mu": 0.098, "sigma": 0.215, "e": 78, "s": 70, "g": 74},
+    {"name": "Vonovia", "ticker": "VONOY", "sector": "Real Estate", "mu": 0.040, "sigma": 0.235, "e": 72, "s": 68, "g": 70},
+    {"name": "Unibail-Rodamco", "ticker": "UNBLF", "sector": "Real Estate", "mu": 0.045, "sigma": 0.250, "e": 70, "s": 64, "g": 68},
+    {"name": "Welltower", "ticker": "WELL", "sector": "Real Estate", "mu": 0.088, "sigma": 0.200, "e": 70, "s": 68, "g": 72},
+    {"name": "Digital Realty", "ticker": "DLR", "sector": "Real Estate", "mu": 0.075, "sigma": 0.205, "e": 74, "s": 68, "g": 72},
+    {"name": "Klepierre", "ticker": "KLPEF", "sector": "Real Estate", "mu": 0.052, "sigma": 0.235, "e": 68, "s": 62, "g": 66},
+
     {"name": "Shell", "ticker": "SHEL", "sector": "Fossil Fuels / Energy", "mu": 0.095, "sigma": 0.240, "e": 38, "s": 50, "g": 58},
     {"name": "BP", "ticker": "BP", "sector": "Fossil Fuels / Energy", "mu": 0.088, "sigma": 0.235, "e": 34, "s": 48, "g": 55},
     {"name": "ExxonMobil", "ticker": "XOM", "sector": "Fossil Fuels / Energy", "mu": 0.100, "sigma": 0.250, "e": 30, "s": 45, "g": 52},
-    {"name": "Prologis", "ticker": "PLD", "sector": "Real Estate", "mu": 0.092, "sigma": 0.200, "e": 72, "s": 68, "g": 73},
+    {"name": "Chevron", "ticker": "CVX", "sector": "Fossil Fuels / Energy", "mu": 0.095, "sigma": 0.245, "e": 32, "s": 46, "g": 54},
+    {"name": "TotalEnergies", "ticker": "TTE", "sector": "Fossil Fuels / Energy", "mu": 0.088, "sigma": 0.235, "e": 42, "s": 52, "g": 58},
+    {"name": "Equinor", "ticker": "EQNR", "sector": "Fossil Fuels / Energy", "mu": 0.085, "sigma": 0.250, "e": 48, "s": 54, "g": 60},
+    {"name": "ConocoPhillips", "ticker": "COP", "sector": "Fossil Fuels / Energy", "mu": 0.112, "sigma": 0.270, "e": 30, "s": 44, "g": 52},
+    {"name": "Schlumberger (SLB)", "ticker": "SLB", "sector": "Fossil Fuels / Energy", "mu": 0.092, "sigma": 0.285, "e": 36, "s": 48, "g": 54},
+    {"name": "Repsol", "ticker": "REPYY", "sector": "Fossil Fuels / Energy", "mu": 0.080, "sigma": 0.238, "e": 44, "s": 50, "g": 56},
+    {"name": "Eni", "ticker": "E", "sector": "Fossil Fuels / Energy", "mu": 0.082, "sigma": 0.240, "e": 42, "s": 50, "g": 54},
+
     {"name": "British American Tobacco", "ticker": "BTI", "sector": "Tobacco", "mu": 0.055, "sigma": 0.175, "e": 28, "s": 32, "g": 55},
+    {"name": "Philip Morris", "ticker": "PM", "sector": "Tobacco", "mu": 0.068, "sigma": 0.182, "e": 30, "s": 35, "g": 58},
+    {"name": "Altria", "ticker": "MO", "sector": "Tobacco", "mu": 0.052, "sigma": 0.190, "e": 25, "s": 30, "g": 52},
+    {"name": "Imperial Brands", "ticker": "IMBBY", "sector": "Tobacco", "mu": 0.060, "sigma": 0.185, "e": 26, "s": 32, "g": 54},
+    {"name": "Japan Tobacco", "ticker": "JAPAY", "sector": "Tobacco", "mu": 0.058, "sigma": 0.178, "e": 28, "s": 34, "g": 56},
+
     {"name": "Diageo", "ticker": "DEO", "sector": "Alcohol", "mu": 0.068, "sigma": 0.170, "e": 65, "s": 60, "g": 70},
+    {"name": "AB InBev", "ticker": "BUD", "sector": "Alcohol", "mu": 0.058, "sigma": 0.210, "e": 60, "s": 55, "g": 62},
+    {"name": "Heineken", "ticker": "HEINY", "sector": "Alcohol", "mu": 0.062, "sigma": 0.195, "e": 64, "s": 58, "g": 65},
+    {"name": "Pernod Ricard", "ticker": "PDRDY", "sector": "Alcohol", "mu": 0.072, "sigma": 0.190, "e": 66, "s": 62, "g": 68},
+    {"name": "Remy Cointreau", "ticker": "REMYY", "sector": "Alcohol", "mu": 0.065, "sigma": 0.220, "e": 68, "s": 60, "g": 66},
+
     {"name": "Flutter Entertainment", "ticker": "FLTR.L", "sector": "Gambling", "mu": 0.078, "sigma": 0.290, "e": 40, "s": 45, "g": 58},
+    {"name": "Evolution AB", "ticker": "EVVTY", "sector": "Gambling", "mu": 0.145, "sigma": 0.350, "e": 38, "s": 42, "g": 60},
+    {"name": "Entain", "ticker": "GMVHF", "sector": "Gambling", "mu": 0.065, "sigma": 0.310, "e": 44, "s": 48, "g": 60},
+    {"name": "MGM Resorts", "ticker": "MGM", "sector": "Gambling", "mu": 0.088, "sigma": 0.390, "e": 42, "s": 50, "g": 55},
+    {"name": "Las Vegas Sands", "ticker": "LVS", "sector": "Gambling", "mu": 0.075, "sigma": 0.380, "e": 38, "s": 48, "g": 54},
+
     {"name": "BAE Systems", "ticker": "BAESY", "sector": "Weapons / Defence", "mu": 0.120, "sigma": 0.230, "e": 35, "s": 55, "g": 62},
     {"name": "Lockheed Martin", "ticker": "LMT", "sector": "Weapons / Defence", "mu": 0.108, "sigma": 0.195, "e": 32, "s": 52, "g": 60},
+    {"name": "Raytheon Technologies", "ticker": "RTX", "sector": "Weapons / Defence", "mu": 0.105, "sigma": 0.205, "e": 34, "s": 54, "g": 62},
+    {"name": "Northrop Grumman", "ticker": "NOC", "sector": "Weapons / Defence", "mu": 0.115, "sigma": 0.198, "e": 33, "s": 53, "g": 61},
+    {"name": "General Dynamics", "ticker": "GD", "sector": "Weapons / Defence", "mu": 0.110, "sigma": 0.192, "e": 34, "s": 52, "g": 60},
+    {"name": "Rheinmetall", "ticker": "RNMBY", "sector": "Weapons / Defence", "mu": 0.225, "sigma": 0.320, "e": 32, "s": 50, "g": 58},
+    {"name": "Leonardo", "ticker": "FINMY", "sector": "Weapons / Defence", "mu": 0.098, "sigma": 0.245, "e": 35, "s": 54, "g": 60},
+    {"name": "Thales", "ticker": "THLLY", "sector": "Weapons / Defence", "mu": 0.105, "sigma": 0.235, "e": 38, "s": 56, "g": 62},
 ]
 
 CURATED_BY_TICKER = {asset["ticker"]: asset for asset in CURATED_ASSETS}
 CURATED_NAMES = [f'{asset["name"]} ({asset["ticker"]})' for asset in CURATED_ASSETS]
+
+
+def build_curated_asset_profile(asset: dict, e_w: int, s_w: int, g_w: int) -> dict:
+    esg_composite = composite_esg(asset["e"], asset["s"], asset["g"], e_w, s_w, g_w) / 100
+    return {**asset, "esg_c": esg_composite, "esg_a": esg_composite}
+
+
+def recommend_guided_asset_pair(
+    e_w: int,
+    s_w: int,
+    g_w: int,
+    gamma: float,
+    lam: float,
+    excluded_sectors: set,
+    rho: float = 0.30,
+    shortlist_size: int = 18,
+    per_sector_limit: int = 2,
+):
+    eligible_assets = []
+    for asset in CURATED_ASSETS:
+        if asset["sector"] in excluded_sectors:
+            continue
+        profiled_asset = build_curated_asset_profile(asset, e_w, s_w, g_w)
+        profiled_asset["_guided_score"] = p_util(
+            profiled_asset["mu"],
+            profiled_asset["sigma"],
+            profiled_asset["esg_a"],
+            gamma,
+            lam,
+        )
+        eligible_assets.append(profiled_asset)
+
+    if len(eligible_assets) < 2:
+        return None
+
+    ranked_assets = sorted(eligible_assets, key=lambda item: item["_guided_score"], reverse=True)
+    shortlist = []
+    sector_counts = {}
+    for asset in ranked_assets:
+        sector_total = sector_counts.get(asset["sector"], 0)
+        if sector_total >= per_sector_limit:
+            continue
+        shortlist.append(asset)
+        sector_counts[asset["sector"]] = sector_total + 1
+
+    for asset in ranked_assets:
+        if len(shortlist) >= shortlist_size:
+            break
+        if any(existing["ticker"] == asset["ticker"] for existing in shortlist):
+            continue
+        shortlist.append(asset)
+
+    if len(shortlist) < 2:
+        shortlist = ranked_assets[: min(shortlist_size, len(ranked_assets))]
+
+    best_pair = None
+    for first_idx, first_asset in enumerate(shortlist[:-1]):
+        for second_asset in shortlist[first_idx + 1:]:
+            weights, mu_grid, sigma_grid, esg_grid, utility_grid, _, idx = optimise(
+                first_asset["mu"],
+                second_asset["mu"],
+                first_asset["sigma"],
+                second_asset["sigma"],
+                first_asset["esg_a"],
+                second_asset["esg_a"],
+                rho,
+                gamma,
+                lam,
+                n=600,
+            )
+            utility_value = float(utility_grid[idx])
+            if not np.isfinite(utility_value):
+                continue
+
+            ranking = (
+                utility_value,
+                float(esg_grid[idx]),
+                -float(sigma_grid[idx]),
+            )
+            w1 = float(weights[idx])
+            w2 = 1 - w1
+            primary_asset = first_asset
+            secondary_asset = second_asset
+            primary_weight = w1
+            secondary_weight = w2
+            if w2 > w1:
+                primary_asset, secondary_asset = second_asset, first_asset
+                primary_weight, secondary_weight = w2, w1
+
+            if best_pair is None or ranking > best_pair["ranking"]:
+                best_pair = {
+                    "asset1": primary_asset,
+                    "asset2": secondary_asset,
+                    "w1": primary_weight,
+                    "w2": secondary_weight,
+                    "ranking": ranking,
+                }
+
+    return best_pair
 
 
 def image_to_data_uri(path: Path, make_transparent=False) -> str:
@@ -2117,6 +2323,37 @@ def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambli
     st.session_state.onboarding_done = True
     st.session_state.entered_app = True
     st.session_state.setup_mode = st.session_state.setup_mode or "guided"
+    if st.session_state.setup_mode == "guided":
+        excluded_sectors = {
+            sector_name
+            for sector_name, enabled in [
+                ("Tobacco", excl_tobacco),
+                ("Weapons / Defence", excl_weapons),
+                ("Gambling", excl_gambling),
+                ("Fossil Fuels / Energy", excl_fossil),
+                ("Alcohol", excl_alcohol),
+            ]
+            if enabled
+        }
+        guided_pair = recommend_guided_asset_pair(
+            e_w,
+            s_w,
+            g_w,
+            gamma,
+            lambda_esg,
+            excluded_sectors,
+        )
+        if guided_pair is not None:
+            asset1 = guided_pair["asset1"]
+            asset2 = guided_pair["asset2"]
+            st.session_state.asset1_mode = "curated"
+            st.session_state.asset2_mode = "curated"
+            st.session_state.asset1_ticker = asset1["ticker"]
+            st.session_state.asset2_ticker = asset2["ticker"]
+            st.session_state.radio_mode_1 = "curated"
+            st.session_state.radio_mode_2 = "curated"
+            st.session_state.curated_sel_1 = f'{asset1["name"]} ({asset1["ticker"]})'
+            st.session_state.curated_sel_2 = f'{asset2["name"]} ({asset2["ticker"]})'
     st.session_state.show_profile_builder = False
     st.session_state.onboarding_step = 1
     st.session_state.generated_signature = None
@@ -2688,6 +2925,12 @@ def render_dashboard():
                     allowed_modes=["curated", "search"],
                     filter_excluded_curated=True,
                 )
+
+        if not is_manual_mode and st.session_state.onboarding_done and a1 is not None and a2 is not None:
+            st.info(
+                f"GreenVest has pre-selected {a1['name']} and {a2['name']} from your preferences. "
+                "You can keep them or swap them before generating the portfolio."
+            )
 
         st.write("")
         rho = st.slider(
