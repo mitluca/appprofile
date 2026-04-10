@@ -954,16 +954,17 @@ def inject_styles():
                 width: 100%;
                 border-radius: 16px;
                 border: 1px solid rgba(46, 123, 83, 0.12);
-                background: linear-gradient(135deg, #256e45, #49a96b);
-                color: #ffffff;
+                background: linear-gradient(135deg, #469f6b, #78c995);
+                color: #ffffff !important;
                 font-weight: 800;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
                 padding: 0.7rem 1rem;
                 box-shadow: 0 14px 22px rgba(37, 100, 68, 0.12);
             }
 
             .stButton > button:hover {
-                color: white !important;
+                color: #ffffff !important;
+                background: linear-gradient(135deg, #53ad78, #88d2a2) !important;
                 border-color: rgba(46, 123, 83, 0.16);
             }
 
@@ -1092,6 +1093,14 @@ def inject_styles():
                 border-radius: 22px;
                 padding: 1rem 1.05rem;
                 margin-bottom: 0.85rem;
+            }
+
+            .profile-question-title {
+                font-size: 1.42rem;
+                font-weight: 800;
+                color: var(--green-900);
+                line-height: 1.28;
+                margin: 0 0 0.35rem;
             }
 
             .mascot-answer {
@@ -1818,12 +1827,6 @@ def render_manual_asset_input(asset_num: int, excluded_sectors: set):
     columns = st.columns([1.05, 1], gap="large")
     with columns[0]:
         name = st.text_input("Name", value=f"Asset {asset_num}", key=f"manual_name_{asset_num}")
-        sector = st.selectbox(
-            "Sector",
-            SECTORS,
-            index=0 if asset_num == 1 else 1,
-            key=f"manual_sector_{asset_num}",
-        )
         mu = st.number_input(
             "Expected return (%)",
             -100.0,
@@ -1850,7 +1853,7 @@ def render_manual_asset_input(asset_num: int, excluded_sectors: set):
     asset_data = {
         "name": name,
         "ticker": "Custom",
-        "sector": sector,
+        "sector": "Self-directed input",
         "mu": mu,
         "sigma": sigma,
         "e": e_score,
@@ -2165,10 +2168,6 @@ def render_profile_builder(editing=False):
             f"""
             <div class="guide-mascot-card">
                 <div class="section-kicker">GreenVest guide</div>
-                <h4>What this question changes</h4>
-                <p>
-                    The mascot translates each step into plain English so you know exactly what will change in the recommendation.
-                </p>
                 <div class="mascot-answer"><strong>Guide note:</strong> {mascot_answers[step]}</div>
                 <img class="guide-mascot-image" src="{QUESTION_DATA_URI}" alt="Question mascot">
             </div>
@@ -2191,6 +2190,10 @@ def render_profile_builder(editing=False):
         st.write("")
 
         if step == 1:
+            st.markdown(
+                '<div class="profile-question-title">If your portfolio dropped 25%, what would you do?</div>',
+                unsafe_allow_html=True,
+            )
             choice = st.radio(
                 "If your portfolio dropped 25%, what would you do?",
                 options=[1, 2, 3, 4],
@@ -2201,6 +2204,7 @@ def render_profile_builder(editing=False):
                     4: "Buy more - downturns are buying opportunities",
                 }[x],
                 index=st.session_state.q1 - 1,
+                label_visibility="collapsed",
             )
             st.caption("This tells GreenVest how much short-term volatility feels comfortable for you.")
             left, _, right = st.columns([1, 1.4, 1])
@@ -2217,6 +2221,10 @@ def render_profile_builder(editing=False):
                     st.rerun()
 
         elif step == 2:
+            st.markdown(
+                '<div class="profile-question-title">What is the primary investment objective?</div>',
+                unsafe_allow_html=True,
+            )
             choice = st.radio(
                 "What is the primary investment objective?",
                 options=[1, 2, 3, 4],
@@ -2227,6 +2235,7 @@ def render_profile_builder(editing=False):
                     4: "Maximise growth - seek the highest return potential",
                 }[x],
                 index=st.session_state.q2 - 1,
+                label_visibility="collapsed",
             )
             st.caption("This shifts the balance between stability, growth, and sustainability tilt.")
             left, _, right = st.columns([1, 1.4, 1])
@@ -2242,6 +2251,10 @@ def render_profile_builder(editing=False):
                     st.rerun()
 
         elif step == 3:
+            st.markdown(
+                '<div class="profile-question-title">How long do you plan to stay invested?</div>',
+                unsafe_allow_html=True,
+            )
             choice = st.radio(
                 "How long do you plan to stay invested?",
                 options=[1, 2, 3, 4],
@@ -2252,6 +2265,7 @@ def render_profile_builder(editing=False):
                     4: "10 years or more",
                 }[x],
                 index=st.session_state.q3 - 1,
+                label_visibility="collapsed",
             )
             st.caption(
                 "Your time horizon tells GreenVest how much short-term movement you can tolerate for long-term upside."
@@ -2269,6 +2283,10 @@ def render_profile_builder(editing=False):
                     st.rerun()
 
         elif step == 4:
+            st.markdown(
+                '<div class="profile-question-title">What are you working toward?</div>',
+                unsafe_allow_html=True,
+            )
             choice = st.radio(
                 "What are you working toward?",
                 options=[1, 2, 3, 4],
@@ -2279,6 +2297,7 @@ def render_profile_builder(editing=False):
                     4: "Short-term profit - stronger near-term gains",
                 }[x],
                 index=st.session_state.goal - 1,
+                label_visibility="collapsed",
             )
             st.caption("Your goal helps decide how much explicit weight ESG receives in the utility score.")
             left, _, right = st.columns([1, 1.4, 1])
@@ -2294,7 +2313,10 @@ def render_profile_builder(editing=False):
                     st.rerun()
 
         else:
-            st.markdown("#### How much should GreenVest care about each ESG pillar?")
+            st.markdown(
+                '<div class="profile-question-title">How much should GreenVest care about each ESG pillar?</div>',
+                unsafe_allow_html=True,
+            )
             st.caption("Set each pillar from 0 to 5. These weights shape your composite ESG score.")
             e_w = st.slider("Environmental priority", 0, 5, st.session_state.e_w)
             s_w = st.slider("Social priority", 0, 5, st.session_state.s_w)
