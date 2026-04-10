@@ -236,6 +236,7 @@ def reset_home_state():
     st.session_state.asset1_ticker = "AAPL"
     st.session_state.asset2_ticker = "MSFT"
     st.session_state.generated_signature = None
+    st.session_state.loader_context = "launch"
     clear_query_params()
 
 
@@ -394,6 +395,14 @@ def inject_styles():
                 animation: loader-float 1.2s ease-in-out infinite alternate;
             }
 
+            .loader-kicker {
+                font-size: 0.82rem;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: 0.16em;
+                color: var(--green-700);
+            }
+
             .loader-title {
                 font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
                 font-size: 2.3rem;
@@ -475,24 +484,16 @@ def inject_styles():
             .hero-brand-copy {
                 display: flex;
                 flex-direction: column;
-                gap: 0.18rem;
-            }
-
-            .hero-welcome-label {
-                font-size: 0.82rem;
-                font-weight: 800;
-                text-transform: uppercase;
-                letter-spacing: 0.14em;
-                color: var(--green-700);
+                justify-content: center;
             }
 
             .hero-logo {
-                width: 72px;
-                height: 72px;
+                width: 76px;
+                height: 76px;
                 object-fit: contain;
                 filter: drop-shadow(0 10px 20px rgba(31, 88, 58, 0.16));
                 flex-shrink: 0;
-                transform: translateY(1px);
+                transform: translateY(2px);
             }
 
             .hero-kicker,
@@ -518,11 +519,11 @@ def inject_styles():
 
             .hero-title {
                 font-family: "Manrope", "Trebuchet MS", sans-serif;
-                font-size: clamp(3.7rem, 6vw, 5.3rem);
+                font-size: clamp(4.1rem, 6.6vw, 5.8rem);
                 font-weight: 800;
-                letter-spacing: -0.05em;
+                letter-spacing: -0.035em;
                 margin: 0;
-                line-height: 0.92;
+                line-height: 0.94;
             }
 
             .hero-brand-row .hero-title {
@@ -539,12 +540,13 @@ def inject_styles():
             .hero-actions {
                 display: flex;
                 flex-wrap: wrap;
-                gap: 0.95rem;
-                margin-bottom: 0.75rem;
+                gap: 1.1rem;
+                margin-bottom: 0.95rem;
             }
 
             .hero-action-form {
                 margin: 0;
+                flex: 1 1 290px;
             }
 
             .hero-button {
@@ -553,16 +555,17 @@ def inject_styles():
                 color: #ffffff !important;
                 font-weight: 800;
                 letter-spacing: 0.01em;
-                padding: 0.95rem 1.45rem;
-                border-radius: 18px;
-                min-width: 230px;
+                padding: 1.12rem 1.85rem;
+                border-radius: 20px;
+                min-width: 290px;
                 text-align: center;
                 box-shadow: 0 20px 30px rgba(37, 100, 68, 0.16);
                 border: 1px solid rgba(255, 255, 255, 0.46);
                 cursor: pointer;
                 font-family: "Manrope", "Trebuchet MS", sans-serif;
-                font-size: 1.05rem;
-                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+                font-size: 1.14rem;
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+                width: 100%;
             }
 
             .hero-button.green {
@@ -1022,14 +1025,20 @@ def inject_styles():
                 background: rgba(255, 255, 255, 0.92);
                 border: 1px solid rgba(46, 123, 83, 0.12);
                 border-radius: 22px;
-                padding: 0.85rem 1rem 0.95rem;
+                padding: 0.75rem 0.95rem 0.85rem;
                 box-shadow: 0 14px 24px rgba(24, 60, 43, 0.06);
-                margin-top: 0.75rem;
+                margin-top: 0.9rem;
             }
 
             .projection-card h4 {
-                font-size: 1rem;
-                margin: 0.1rem 0 0.35rem;
+                font-size: 0.92rem;
+                margin: 0.08rem 0 0.28rem;
+            }
+
+            .projection-copy {
+                font-size: 0.88rem;
+                color: var(--ink-500);
+                margin: 0 0 0.55rem;
             }
 
             .dashboard-utility {
@@ -1044,8 +1053,8 @@ def inject_styles():
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                width: 60px;
-                height: 60px;
+                width: 64px;
+                height: 64px;
                 border-radius: 18px;
                 background: rgba(255, 255, 255, 0.9);
                 border: 1px solid rgba(46, 123, 83, 0.12);
@@ -1053,8 +1062,8 @@ def inject_styles():
             }
 
             .dashboard-home-link img {
-                width: 36px;
-                height: 36px;
+                width: 40px;
+                height: 40px;
                 object-fit: contain;
             }
 
@@ -1066,8 +1075,23 @@ def inject_styles():
             }
 
             div[data-testid="stDialog"] .block-container {
-                padding-top: 0.75rem;
-                padding-bottom: 1rem;
+                padding-top: 0.85rem;
+                padding-bottom: 1.1rem;
+            }
+
+            div[data-testid="stDialog"] [data-testid="stRadio"] label p,
+            div[data-testid="stDialog"] [data-testid="stMarkdownContainer"] p,
+            div[data-testid="stDialog"] label,
+            div[data-testid="stDialog"] .stCaptionContainer {
+                color: var(--ink-700);
+            }
+
+            .profile-step-card {
+                background: rgba(255, 255, 255, 0.72);
+                border: 1px solid rgba(46, 123, 83, 0.1);
+                border-radius: 22px;
+                padding: 1rem 1.05rem;
+                margin-bottom: 0.85rem;
             }
 
             .mascot-answer {
@@ -1116,26 +1140,30 @@ def inject_styles():
         """,
         unsafe_allow_html=True,
     )
-    st.markdown(
-        """
-        <style>
-            .hero-welcome-label::before {
-                display: none !important;
-                content: none !important;
-            }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
 
 
 def render_loader():
+    loader_context = st.session_state.get("loader_context", "launch")
+    if loader_context == "home":
+        kicker_html = '<div class="loader-kicker">Back to investing?</div>'
+        title = "GreenVest"
+        copy = "Returning you to the home page"
+    elif loader_context == "launch":
+        kicker_html = '<div class="loader-kicker">Welcome to GreenVest</div>'
+        title = "GreenVest"
+        copy = "Loading your sustainable investing workspace"
+    else:
+        kicker_html = ""
+        title = "GreenVest"
+        copy = "Preparing your investing workspace"
+
     st.markdown(
         f"""
         <div class="loader-overlay">
             <img class="loader-logo" src="{LOGO_DATA_URI}" alt="GreenVest logo">
-            <div class="loader-title">GreenVest</div>
-            <div class="loader-copy">Loading your sustainable investing workspace</div>
+            {kicker_html}
+            <div class="loader-title">{title}</div>
+            <div class="loader-copy">{copy}</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1569,7 +1597,19 @@ def build_summary_pdf_bytes(
     return buffer.getvalue()
 
 
-def render_investor_charts_section(both_excluded, force_w1, results, a1, a2, invest, title, summary_pdf_bytes):
+def render_investor_charts_section(
+    both_excluded,
+    force_w1,
+    results,
+    a1,
+    a2,
+    invest,
+    title,
+    summary_pdf_bytes,
+    checkpoint_df,
+    benchmark_message_kind,
+    benchmark_message_text,
+):
     st.write("")
     header_cols = st.columns([1.35, 0.65], gap="large")
     with header_cols[0]:
@@ -1577,10 +1617,6 @@ def render_investor_charts_section(both_excluded, force_w1, results, a1, a2, inv
             f"""
             <div class="section-kicker">{title}</div>
             <h3 class="section-title">{title}</h3>
-            <p class="section-copy">
-                These charts highlight the portfolio recommendation and its long-term projection in a cleaner,
-                more presentation-ready format.
-            </p>
             """,
             unsafe_allow_html=True,
         )
@@ -1643,9 +1679,39 @@ def render_investor_charts_section(both_excluded, force_w1, results, a1, a2, inv
         st.pyplot(future_fig)
         plt.close(future_fig)
         st.markdown(
-            '<div class="chart-caption">Projected values use the current assumptions from the builder below, so investors can compare recommendations instantly.</div>',
+            '<div class="chart-caption">Projected values use the current assumptions from the builder on this page, so investors can compare scenarios instantly.</div>',
             unsafe_allow_html=True,
         )
+
+    if both_excluded:
+        st.markdown(
+            """
+            <div class="projection-card">
+                <div class="section-kicker">Projection</div>
+                <h4>Projection checkpoints</h4>
+                <p class="projection-copy">Projection values will appear here once at least one selected asset is eligible for recommendation.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    st.markdown(
+        """
+        <div class="projection-card">
+            <div class="section-kicker">Projection</div>
+            <h4>Projection checkpoints</h4>
+            <p class="projection-copy">A compact checkpoint view for quick investor conversations.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if benchmark_message_text:
+        if benchmark_message_kind == "success":
+            st.success(benchmark_message_text)
+        else:
+            st.info(benchmark_message_text)
+    st.dataframe(checkpoint_df, use_container_width=True, hide_index=True)
 
 
 def get_excluded_sectors():
@@ -2054,25 +2120,32 @@ def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambli
     st.rerun()
 
 
-@st.dialog("Investor Preferences", width="large")
+@st.dialog("Your Investor Preferences", width="large")
 def render_profile_builder(editing=False):
     total_steps = 5
     step = st.session_state.onboarding_step
     is_manual_mode = st.session_state.setup_mode == "manual"
-    heading = "Investor Preference Builder" if not editing else "Update Investor Preferences"
+    heading = "Set Your Investor Preferences" if not editing else "Update Your Preferences"
     if editing:
-        body = "Adjust your preferences here, then click generate again to refresh your portfolio."
+        body = "Refine your answers here, then generate again to refresh your portfolio without leaving the workspace."
     elif is_manual_mode:
-        body = "Set your investor preferences first, then enter your own expected returns, risk, and ESG assumptions."
+        body = "Answer these questions first, then enter your own expected returns, risk, and ESG assumptions."
     else:
-        body = "Complete your investor profile first, then choose eligible assets and generate your portfolio."
+        body = "Answer these questions first, then choose from the eligible assets and generate your portfolio."
 
     mascot_answers = {
-        1: "Choose the answer that feels closest to how you would really react if markets fell sharply.",
-        2: "This tells GreenVest whether your priority is stability, income, long-term growth, or stronger upside.",
-        3: "A longer horizon usually gives your portfolio more room to absorb short-term volatility.",
-        4: "Your goal helps decide how strongly the portfolio should lean toward growth versus sustainability.",
-        5: "Use these sliders to show how much you want environmental, social, and governance factors to shape your portfolio.",
+        1: "This answer sets how defensive or adventurous your portfolio should feel if markets become volatile.",
+        2: "Your objective tells GreenVest whether to lean more toward stability, income, or long-term growth.",
+        3: "Your time horizon affects how much short-term movement GreenVest can tolerate for stronger long-term upside.",
+        4: "Your goal helps decide how strongly the recommendation should balance growth with sustainability.",
+        5: "These priorities tell GreenVest how much environmental, social, governance, and sector exclusions should shape the final mix.",
+    }
+    step_summaries = {
+        1: "Start by telling GreenVest how you react to losses.",
+        2: "Next, define what success looks like for your portfolio.",
+        3: "Then set the time horizon GreenVest should plan around.",
+        4: "Now choose the outcome you care about most.",
+        5: "Finish by setting your ESG priorities and any sector exclusions.",
     }
 
     st.markdown(
@@ -2091,12 +2164,12 @@ def render_profile_builder(editing=False):
         st.markdown(
             f"""
             <div class="guide-mascot-card">
-                <div class="section-kicker">Investor guide</div>
-                <h4>Your guide</h4>
+                <div class="section-kicker">GreenVest guide</div>
+                <h4>What this question changes</h4>
                 <p>
-                    The mascot can help explain what each question means before you move to the next step.
+                    The mascot translates each step into plain English so you know exactly what will change in the recommendation.
                 </p>
-                <div class="mascot-answer"><strong>Mascot answer:</strong> {mascot_answers[step]}</div>
+                <div class="mascot-answer"><strong>Guide note:</strong> {mascot_answers[step]}</div>
                 <img class="guide-mascot-image" src="{QUESTION_DATA_URI}" alt="Question mascot">
             </div>
             """,
@@ -2104,6 +2177,15 @@ def render_profile_builder(editing=False):
         )
 
     with content_col:
+        st.markdown(
+            f"""
+            <div class="profile-step-card">
+                <div class="section-kicker">Step overview</div>
+                <p class="section-copy">{step_summaries[step]}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.progress(step / total_steps)
         st.caption(f"Step {step} of {total_steps}")
         st.write("")
@@ -2271,7 +2353,6 @@ def render_landing_page():
                     <div class="hero-brand-row">
                         <img class="hero-logo" src="{LOGO_DATA_URI}" alt="GreenVest logo">
                         <div class="hero-brand-copy">
-                            <div class="hero-welcome-label">Welcome to GreenVest</div>
                             <h1 class="hero-title">GreenVest</h1>
                         </div>
                     </div>
@@ -2370,6 +2451,7 @@ def initialize_session_state():
         "setup_mode": None,
         "loader_complete": False,
         "show_loader": False,
+        "loader_context": "launch",
         "onboarding_done": False,
         "onboarding_step": 1,
         "q1": 3,
@@ -2406,11 +2488,13 @@ def handle_entry_actions():
     if nav == "home":
         reset_home_state()
         st.session_state.show_loader = True
+        st.session_state.loader_context = "home"
         return
 
     action = get_query_param("launch")
     if action == "manual":
         st.session_state.show_loader = True
+        st.session_state.loader_context = "enter"
         st.session_state.entered_app = True
         st.session_state.onboarding_done = False
         st.session_state.setup_mode = "manual"
@@ -2422,6 +2506,7 @@ def handle_entry_actions():
 
     if action == "guided":
         st.session_state.show_loader = True
+        st.session_state.loader_context = "enter"
         st.session_state.entered_app = True
         st.session_state.show_profile_builder = True
         st.session_state.setup_mode = "guided"
@@ -2456,25 +2541,18 @@ def render_dashboard():
     if st.session_state.show_profile_builder:
         render_profile_builder(editing=st.session_state.onboarding_done)
 
-    builder_col, insight_col = st.columns([1.08, 0.92], gap="large")
+    builder_col, insight_col = st.columns([1.34, 0.66], gap="large")
 
     current_signature = None
     a1 = None
     a2 = None
-    projection_slot = None
 
     with builder_col:
         builder_heading = "Enter your asset assumptions" if is_manual_mode else "Choose your assets"
-        builder_copy = (
-            "Set your investor preferences first, then enter your own expected returns, standard deviations, and ESG inputs."
-            if is_manual_mode
-            else "Set your investor preferences first, then choose from the eligible assets GreenVest can recommend."
-        )
         st.markdown(
             f"""
             <div class="section-kicker">Portfolio builder</div>
             <h3 class="section-title">{builder_heading}</h3>
-            <p class="section-copy">{builder_copy}</p>
             """,
             unsafe_allow_html=True,
         )
@@ -2567,7 +2645,7 @@ def render_dashboard():
         )
 
         excluded_sectors = get_excluded_sectors()
-        asset_cols = st.columns(2, gap="large")
+        asset_cols = st.columns(2, gap="medium")
         with asset_cols[0]:
             if is_manual_mode:
                 a1 = render_manual_asset_input(1, excluded_sectors)
@@ -2620,8 +2698,6 @@ def render_dashboard():
             st.info("Complete your investor preferences popup first, then generate your portfolio.")
         elif a1 is None or a2 is None:
             st.info("Complete both asset sections to unlock the portfolio recommendation.")
-
-        projection_slot = st.container()
 
     if a1 is None or a2 is None:
         return
@@ -2772,36 +2848,10 @@ def render_dashboard():
             invest,
             "Investor Charts",
             summary_pdf_bytes,
+            checkpoint_df,
+            benchmark_message_kind,
+            benchmark_message_text,
         )
-
-    with projection_slot:
-        if both_excluded:
-            st.markdown(
-                """
-                <div class="projection-card">
-                    <div class="section-kicker">Projection</div>
-                    <h4>Checkpoint outlook</h4>
-                    <p class="section-copy">Projection values will appear here once at least one selected asset is eligible for recommendation.</p>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                """
-                <div class="projection-card">
-                    <div class="section-kicker">Projection</div>
-                    <h4>Checkpoint outlook</h4>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            if benchmark_message_text:
-                if benchmark_message_kind == "success":
-                    st.success(benchmark_message_text)
-                else:
-                    st.info(benchmark_message_text)
-            st.dataframe(checkpoint_df, use_container_width=True, hide_index=True)
 
     with insight_col:
         st.markdown(
@@ -2896,9 +2946,11 @@ handle_entry_actions()
 if not st.session_state.loader_complete:
     st.session_state.loader_complete = True
     render_loader()
+    st.session_state.loader_context = "enter"
 elif st.session_state.show_loader:
     render_loader()
     st.session_state.show_loader = False
+    st.session_state.loader_context = "enter"
 
 if not st.session_state.entered_app:
     render_landing_page()
