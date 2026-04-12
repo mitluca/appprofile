@@ -1960,20 +1960,14 @@ def render_investor_charts_section(
         return
 
     st.markdown(
-        """
+        f"""
         <div class="projection-card">
             <div class="section-kicker">Projection</div>
-            <h4>Projection checkpoints</h4>
-            <p class="projection-copy">A compact checkpoint view for quick investor conversations.</p>
+            <p class="projection-copy">{benchmark_message_text or "Projected values below reflect the current assumptions."}</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    if benchmark_message_text:
-        if benchmark_message_kind == "success":
-            st.success(benchmark_message_text)
-        else:
-            st.info(benchmark_message_text)
     st.dataframe(checkpoint_df, use_container_width=True, hide_index=True)
 
 
@@ -2002,18 +1996,22 @@ def excluded_sector_labels():
 
 def sync_gamma_slider():
     st.session_state.gamma_val = st.session_state._g_sl
+    st.session_state._g_ni = st.session_state._g_sl
 
 
 def sync_gamma_input():
     st.session_state.gamma_val = st.session_state._g_ni
+    st.session_state._g_sl = st.session_state._g_ni
 
 
 def sync_lambda_slider():
     st.session_state.lambda_val = st.session_state._l_sl
+    st.session_state._l_ni = st.session_state._l_sl
 
 
 def sync_lambda_input():
     st.session_state.lambda_val = st.session_state._l_ni
+    st.session_state._l_sl = st.session_state._l_ni
 
 
 def render_asset_card_html(asset: dict) -> str:
@@ -2866,6 +2864,15 @@ def render_dashboard():
             )
 
         with st.expander("Advanced controls for gamma and lambda", expanded=False):
+            if "_g_sl" not in st.session_state:
+                st.session_state._g_sl = st.session_state.gamma_val
+            if "_g_ni" not in st.session_state:
+                st.session_state._g_ni = st.session_state.gamma_val
+            if "_l_sl" not in st.session_state:
+                st.session_state._l_sl = st.session_state.lambda_val
+            if "_l_ni" not in st.session_state:
+                st.session_state._l_ni = st.session_state.lambda_val
+
             st.caption(
                 "Use these only if you want to override the profile-derived risk aversion and ESG preference values."
             )
