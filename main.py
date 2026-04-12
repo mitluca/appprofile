@@ -3070,6 +3070,30 @@ def render_dashboard():
         x2_ms = None
         risky_share_ms = None
 
+        # Corner solution detection
+        CORNER_THRESHOLD = 0.002  # treat anything < 0.2% as a corner
+
+        if not both_excluded and force_w1 is None:
+            corner_asset = None
+            if results["w1"] < CORNER_THRESHOLD * results["risky_share"]:
+                corner_asset = a2["name"]  # all risky weight in asset 2
+                zero_asset = a1["name"]
+            elif results["w2"] < CORNER_THRESHOLD * results["risky_share"]:
+                corner_asset = a1["name"]
+                zero_asset = a2["name"]
+
+            if corner_asset is not None:
+                st.info(
+                    f"**Corner solution detected.** At your current ESG preference "
+                    f"(λ = {lambda_used:.3f}), holding any allocation in "
+                    f"**{zero_asset}** reduces portfolio utility. The optimiser has "
+                    f"placed the entire risky sleeve in **{corner_asset}**. "
+                    f"This is economically meaningful: your sustainability preference "
+                    f"is strong enough that diversification into the lower-ESG asset "
+                    f"is not worth the trade-off. To restore a mixed portfolio, lower λ "
+                    f"or choose an asset pair with more similar ESG scores."
+                )
+
         if force_w1 is None:
             _, x1_ms, x2_ms, risky_share_ms, mu_ms, sigma_ms, esg_ms, objective_ms, esg_adjusted_ms, idx_financial = optimise(
                 a1["mu"],
