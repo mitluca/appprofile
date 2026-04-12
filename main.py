@@ -260,6 +260,7 @@ def recommend_guided_asset_pair(
     gamma: float,
     lam: float,
     excluded_sectors: set,
+    rf: float = 0.045,
     rho: float = 0.30,
     shortlist_size: int = 18,
     per_sector_limit: int = 2,
@@ -270,8 +271,8 @@ def recommend_guided_asset_pair(
             continue
         profiled_asset = build_curated_asset_profile(asset, e_w, s_w, g_w)
         profiled_asset["_guided_score"] = p_util(
-            profiled_asset["mu"],
-            profiled_asset["sigma"],
+            profiled_asset["mu"] - rf,
+            profiled_asset["sigma"] ** 2,
             profiled_asset["esg_a"],
             gamma,
             lam,
@@ -304,7 +305,7 @@ def recommend_guided_asset_pair(
     best_pair = None
     for first_idx, first_asset in enumerate(shortlist[:-1]):
         for second_asset in shortlist[first_idx + 1:]:
-            weights, mu_grid, sigma_grid, esg_grid, utility_grid, _, idx = optimise(
+            _, x1_grid, x2_grid, _, total_return_grid, sigma_grid, esg_grid, objective_grid, _, idx = optimise(
                 first_asset["mu"],
                 second_asset["mu"],
                 first_asset["sigma"],
@@ -312,28 +313,30 @@ def recommend_guided_asset_pair(
                 first_asset["esg_a"],
                 second_asset["esg_a"],
                 rho,
+                rf,
                 gamma,
                 lam,
                 n=600,
             )
-            utility_value = float(utility_grid[idx])
-            if not np.isfinite(utility_value):
+            objective_value = float(objective_grid[idx])
+            if not np.isfinite(objective_value):
                 continue
 
             ranking = (
-                utility_value,
+                objective_value,
+                float(total_return_grid[idx]),
                 float(esg_grid[idx]),
                 -float(sigma_grid[idx]),
             )
-            w1 = float(weights[idx])
-            w2 = 1 - w1
+            x1 = float(x1_grid[idx])
+            x2 = float(x2_grid[idx])
             primary_asset = first_asset
             secondary_asset = second_asset
-            primary_weight = w1
-            secondary_weight = w2
-            if w2 > w1:
+            primary_weight = x1
+            secondary_weight = x2
+            if x2 > x1:
                 primary_asset, secondary_asset = second_asset, first_asset
-                primary_weight, secondary_weight = w2, w1
+                primary_weight, secondary_weight = x2, x1
 
             if best_pair is None or ranking > best_pair["ranking"]:
                 best_pair = {
@@ -1389,16 +1392,20 @@ def p_return(w1, mu1, mu2):
     return w1 * mu1 + (1 - w1) * mu2
 
 
+def p_variance(w1, s1, s2, rho):
+    return w1**2 * s1**2 + (1 - w1) ** 2 * s2**2 + 2 * rho * w1 * (1 - w1) * s1 * s2
+
+
 def p_std(w1, s1, s2, rho):
-    return np.sqrt(w1**2 * s1**2 + (1 - w1) ** 2 * s2**2 + 2 * rho * w1 * (1 - w1) * s1 * s2)
+    return np.sqrt(p_variance(w1, s1, s2, rho))
 
 
 def p_esg(w1, e1, e2):
     return w1 * e1 + (1 - w1) * e2
 
 
-def p_util(mu, sig, esg, gamma, lam):
-    return mu - (gamma / 2) * sig**2 + lam * esg
+def p_util(excess_return, variance, esg, gamma, lam):
+    return excess_return - (gamma / 2) * variance + lam * esg
 
 
 def composite_esg(e, s, g, we, ws, wg):
@@ -1428,22 +1435,55 @@ def future_value(pv, r, years):
     return pv * (1 + r) ** years
 
 
-def optimise(mu1, mu2, s1, s2, e1, e2, rho, gamma, lam, n=2000, force_w1=None):
-    if force_w1 is not None:
-        weights = np.array([force_w1])
-        mu_grid = p_return(weights, mu1, mu2)
-        sigma_grid = p_std(weights, s1, s2, rho)
-        esg_grid = p_esg(weights, e1, e2)
-        utility_grid = p_util(mu_grid, sigma_grid, esg_grid, gamma, lam)
-        return weights, mu_grid, sigma_grid, esg_grid, utility_grid, mu_grid + lam * esg_grid, 0
+def optimal_risky_share(excess_return, variance, gamma):
+    if variance <= 0 or gamma <= 0:
+        return 0.0
+    return max(excess_return / (gamma * variance), 0.0)
 
-    weights = np.linspace(0, 1, n)
-    mu_grid = p_return(weights, mu1, mu2)
-    sigma_grid = p_std(weights, s1, s2, rho)
-    esg_grid = p_esg(weights, e1, e2)
-    utility_grid = p_util(mu_grid, sigma_grid, esg_grid, gamma, lam)
-    idx = np.argmax(utility_grid)
-    return weights, mu_grid, sigma_grid, esg_grid, utility_grid, mu_grid + lam * esg_grid, idx
+
+def optimise(mu1, mu2, s1, s2, e1, e2, rho, rf, gamma, lam, n=2000, force_w1=None):
+    if force_w1 is not None:
+        mix_grid = np.array([force_w1], dtype=float)
+    else:
+        mix_grid = np.linspace(0, 1, n)
+
+    sleeve_return_grid = p_return(mix_grid, mu1, mu2)
+    sleeve_excess_grid = sleeve_return_grid - rf
+    sleeve_variance_grid = p_variance(mix_grid, s1, s2, rho)
+    sleeve_sigma_grid = np.sqrt(sleeve_variance_grid)
+    esg_grid = p_esg(mix_grid, e1, e2)
+
+    risky_share_grid = np.zeros_like(mix_grid, dtype=float)
+    valid_variance = sleeve_variance_grid > 0
+    risky_share_grid[valid_variance] = np.maximum(
+        sleeve_excess_grid[valid_variance] / (gamma * sleeve_variance_grid[valid_variance]),
+        0.0,
+    )
+
+    x1_grid = risky_share_grid * mix_grid
+    x2_grid = risky_share_grid * (1 - mix_grid)
+    sigma_grid = risky_share_grid * sleeve_sigma_grid
+    excess_contribution_grid = risky_share_grid * sleeve_excess_grid
+    total_return_grid = rf + excess_contribution_grid
+    objective_grid = (
+        excess_contribution_grid
+        - (gamma / 2) * (sigma_grid ** 2)
+        + np.where(risky_share_grid > 1e-10, lam * esg_grid, 0.0)
+    )
+    esg_adjusted_grid = total_return_grid + np.where(risky_share_grid > 1e-10, lam * esg_grid, 0.0)
+    idx = int(np.argmax(objective_grid))
+    return (
+        mix_grid,
+        x1_grid,
+        x2_grid,
+        risky_share_grid,
+        total_return_grid,
+        sigma_grid,
+        esg_grid,
+        objective_grid,
+        esg_adjusted_grid,
+        idx,
+    )
 
 
 def derive_lambda(e_w, s_w, g_w, excl_count, goal_lam):
@@ -1543,7 +1583,7 @@ def build_frontier_chart(
 
     ax.set_title("ESG Efficient Frontier", fontsize=15, fontweight="bold", color="#163a2a", pad=14)
     ax.set_xlabel("Portfolio risk (std deviation)")
-    ax.set_ylabel("ESG-adjusted return")
+    ax.set_ylabel("Expected return + ESG tilt")
     ax.legend(
         loc="lower right",
         fontsize=8.6,
@@ -1585,7 +1625,7 @@ def build_future_value_chart(invest, opt_return, benchmark_return=None, selected
             color="#2f7dca",
             linewidth=2.4,
             linestyle="--",
-            label="Balanced 50 / 50 reference",
+            label="50 / 50 risky-sleeve reference",
         )
         ax.scatter(
             years[-1],
@@ -1712,8 +1752,9 @@ def build_summary_pdf_bytes(
             0.0,
             0.41,
             (
-                f"Recommended allocation: {asset_one['name']} {results['w1'] * 100:.1f}%   |   "
-                f"{asset_two['name']} {results['w2'] * 100:.1f}%"
+                f"Risky positions: {asset_one['name']} {results['w1'] * 100:.1f}%   |   "
+                f"{asset_two['name']} {results['w2'] * 100:.1f}%   |   "
+                f"Risk-free {results['rf_weight'] * 100:.1f}%"
             ),
             fontsize=13.5,
             fontweight="bold",
@@ -1744,17 +1785,21 @@ def build_summary_pdf_bytes(
         )
 
         style_axis(ax_alloc)
-        allocation_names = [asset_one["name"], asset_two["name"]]
-        allocation_values = [results["w1"] * 100, results["w2"] * 100]
-        allocation_colors = ["#2e7b53", "#2f7dca"]
+        allocation_names = [asset_one["name"], asset_two["name"], "Risk-free"]
+        allocation_values = [results["w1"] * 100, results["w2"] * 100, results["rf_weight"] * 100]
+        allocation_colors = ["#2e7b53", "#2f7dca", "#9ab7a7"]
         positions = np.arange(len(allocation_names))
         ax_alloc.barh(positions, allocation_values, color=allocation_colors, height=0.45)
         ax_alloc.set_yticks(positions, allocation_names)
-        ax_alloc.set_xlim(0, 100)
-        ax_alloc.set_xlabel("Portfolio weight (%)")
-        ax_alloc.set_title("Recommended allocation", fontsize=13.5, fontweight="bold", color="#163a2a", pad=12)
+        lower_bound = min(-50.0, min(allocation_values) - 10)
+        upper_bound = max(100.0, max(allocation_values) + 15)
+        ax_alloc.set_xlim(lower_bound, upper_bound)
+        ax_alloc.axvline(0, color="#cddfd2", linewidth=1.0)
+        ax_alloc.set_xlabel("Position (% of wealth)")
+        ax_alloc.set_title("Recommended positions", fontsize=13.5, fontweight="bold", color="#163a2a", pad=12)
         for idx, value in enumerate(allocation_values):
-            ax_alloc.text(value + 2, idx, f"{value:.1f}%", va="center", fontsize=10.2, color="#224d38")
+            x_position = value + 2 if value >= 0 else value - 18
+            ax_alloc.text(x_position, idx, f"{value:.1f}%", va="center", fontsize=10.2, color="#224d38")
 
         style_axis(ax_growth)
         ax_growth.plot(years, future_values, color="#1f6844", linewidth=3.0, label="GreenVest strategy")
@@ -1766,7 +1811,7 @@ def build_summary_pdf_bytes(
                 color="#2f7dca",
                 linewidth=2.0,
                 linestyle="--",
-                label="Balanced 50 / 50 reference",
+                label="50 / 50 risky-sleeve reference",
             )
         ax_growth.set_title("Future value outlook", fontsize=13.5, fontweight="bold", color="#163a2a", pad=12)
         ax_growth.set_xlabel("Years invested")
@@ -1784,12 +1829,13 @@ def build_summary_pdf_bytes(
         ax_notes.axis("off")
         ax_notes.text(0.0, 0.96, "Key portfolio facts", fontsize=14, fontweight="bold", color="#163a2a")
         note_lines = [
+            f"Risk-free weight: {results['rf_weight'] * 100:.2f}%",
             f"Expected return: {results['mu_opt'] * 100:.2f}%",
             f"Portfolio risk: {results['sigma_opt'] * 100:.2f}%",
             f"Sharpe ratio: {results['sharpe_opt']:.3f}",
             f"ESG score: {results['esg_opt'] * 100:.1f} / 100 [{esg_rating(results['esg_opt'])}]",
             f"Impact score: {results['impact_score']:.1f}",
-            f"Trade-off score: {results['tradeoff']:.4f}",
+            f"Objective value: {results['utility_opt']:.4f}",
             "",
             "Projection checkpoints",
             *checkpoint_lines,
@@ -2800,6 +2846,7 @@ def render_dashboard():
     if st.session_state.show_profile_builder:
         render_profile_builder(editing=st.session_state.onboarding_done)
 
+    top_results_slot = st.container()
     builder_col, insight_col = st.columns([1.34, 0.66], gap="large")
 
     current_signature = None
@@ -2807,14 +2854,14 @@ def render_dashboard():
     a2 = None
 
     with builder_col:
-        builder_heading = "Enter your asset assumptions" if is_manual_mode else "Choose your assets"
-        st.markdown(
-            f"""
-            <div class="section-kicker">Portfolio builder</div>
-            <h3 class="section-title">{builder_heading}</h3>
-            """,
-            unsafe_allow_html=True,
-        )
+        if is_manual_mode:
+            st.markdown(
+                """
+                <div class="section-kicker">Portfolio builder</div>
+                <h3 class="section-title">Enter your asset assumptions</h3>
+                """,
+                unsafe_allow_html=True,
+            )
 
         with st.expander("Advanced controls for gamma and lambda", expanded=False):
             st.caption(
@@ -2985,7 +3032,7 @@ def render_dashboard():
     checkpoint_df = pd.DataFrame()
 
     if not both_excluded:
-        weights, mu_grid, sigma_grid, esg_grid, utility_grid, esg_adjusted_grid, idx = optimise(
+        mix_grid, x1_grid, x2_grid, risky_share_grid, mu_grid, sigma_grid, esg_grid, objective_grid, esg_adjusted_grid, idx = optimise(
             a1["mu"],
             a2["mu"],
             a1["sigma"],
@@ -2993,30 +3040,38 @@ def render_dashboard():
             a1["esg_a"],
             a2["esg_a"],
             rho,
+            rf,
             gamma_used,
             lambda_used,
             force_w1=force_w1,
         )
 
-        w1 = float(weights[idx])
-        w2 = 1 - w1
+        w1 = float(x1_grid[idx])
+        w2 = float(x2_grid[idx])
+        risky_share = float(risky_share_grid[idx])
+        rf_weight = 1 - risky_share
         mu_opt = float(mu_grid[idx])
         sigma_opt = float(sigma_grid[idx])
         esg_opt = float(esg_grid[idx])
-        utility_opt = float(utility_grid[idx])
+        utility_opt = float(objective_grid[idx])
         sharpe_opt = (mu_opt - rf) / sigma_opt if sigma_opt > 0 else float("nan")
         esg_sharpe_opt = esg_sharpe(mu_opt, rf, sigma_opt, lambda_used, esg_opt)
         impact_score = round(esg_opt * 100, 1)
-        tradeoff = lambda_used * esg_opt - gamma_used * sigma_opt
+        tradeoff = lambda_used * esg_opt - (gamma_used / 2) * (sigma_opt ** 2)
 
         benchmark_return = None
         ret_cost = 0.0
         idx_financial = None
         idx_low_risk = None
         mu_50 = None
+        sigma_ms = None
+        esg_adjusted_ms = None
+        x1_ms = None
+        x2_ms = None
+        risky_share_ms = None
 
         if force_w1 is None:
-            _, mu_ms, sigma_ms, esg_ms, _, esg_adjusted_ms, idx_financial = optimise(
+            _, x1_ms, x2_ms, risky_share_ms, mu_ms, sigma_ms, esg_ms, objective_ms, esg_adjusted_ms, idx_financial = optimise(
                 a1["mu"],
                 a2["mu"],
                 a1["sigma"],
@@ -3024,18 +3079,38 @@ def render_dashboard():
                 a1["esg_a"],
                 a2["esg_a"],
                 rho,
+                rf,
                 gamma_used,
                 0.0,
             )
-            idx_low_risk = int(np.argmin(sigma_grid))
-            benchmark_return = p_return(0.5, a1["mu"], a2["mu"])
+            positive_risky_mask = risky_share_grid > 1e-8
+            if np.any(positive_risky_mask):
+                idx_low_risk = int(np.argmin(np.where(positive_risky_mask, sigma_grid, np.inf)))
+            else:
+                idx_low_risk = int(np.argmin(sigma_grid))
+
+            _, x1_50, x2_50, risky_share_50, mu_50_grid, sigma_50_grid, esg_50_grid, objective_50_grid, _, idx_50 = optimise(
+                a1["mu"],
+                a2["mu"],
+                a1["sigma"],
+                a2["sigma"],
+                a1["esg_a"],
+                a2["esg_a"],
+                rho,
+                rf,
+                gamma_used,
+                0.0,
+                force_w1=0.5,
+            )
+            benchmark_return = float(mu_50_grid[idx_50])
             mu_50 = benchmark_return
             ret_cost = mu_ms[idx_financial] * 100 - mu_opt * 100
-        else:
-            mu_ms = sigma_ms = esg_adjusted_ms = None
 
         results = {
-            "weights": weights,
+            "mix_grid": mix_grid,
+            "x1_grid": x1_grid,
+            "x2_grid": x2_grid,
+            "risky_share_grid": risky_share_grid,
             "mu_grid": mu_grid,
             "sigma_grid": sigma_grid,
             "esg_grid": esg_grid,
@@ -3043,6 +3118,8 @@ def render_dashboard():
             "idx": idx,
             "w1": w1,
             "w2": w2,
+            "rf_weight": rf_weight,
+            "risky_share": risky_share,
             "mu_opt": mu_opt,
             "sigma_opt": sigma_opt,
             "esg_opt": esg_opt,
@@ -3058,6 +3135,9 @@ def render_dashboard():
             "mu_ms": mu_ms,
             "sigma_ms": sigma_ms,
             "esg_adjusted_ms": esg_adjusted_ms,
+            "x1_ms": x1_ms,
+            "x2_ms": x2_ms,
+            "risky_share_ms": risky_share_ms,
             "mu_50": mu_50,
         }
 
@@ -3084,7 +3164,7 @@ def render_dashboard():
             }
         )
         if results["benchmark_return"] is not None:
-            checkpoint_df["50 / 50"] = [
+            checkpoint_df["50 / 50 risky mix"] = [
                 f"GBP {future_value(invest, results['benchmark_return'], year):,.0f}" for year in checkpoint_years
             ]
             recommendation_30 = future_value(invest, results["mu_opt"], 30)
@@ -3092,31 +3172,32 @@ def render_dashboard():
             if recommendation_30 > benchmark_30:
                 benchmark_message_kind = "success"
                 benchmark_message_text = (
-                    f"GreenVest is projected to outperform the 50 / 50 reference by GBP {recommendation_30 - benchmark_30:,.0f} over 30 years."
+                    f"GreenVest is projected to outperform the 50 / 50 risky-mix reference by GBP {recommendation_30 - benchmark_30:,.0f} over 30 years."
                 )
             elif benchmark_30 > recommendation_30:
                 benchmark_message_kind = "info"
                 benchmark_message_text = (
-                    f"The 50 / 50 reference projects GBP {benchmark_30 - recommendation_30:,.0f} more over 30 years under the current assumptions."
+                    f"The 50 / 50 risky-mix reference projects GBP {benchmark_30 - recommendation_30:,.0f} more over 30 years under the current assumptions."
                 )
             else:
                 benchmark_message_kind = "info"
-                benchmark_message_text = "GreenVest and the 50 / 50 reference project the same 30-year value under the current assumptions."
+                benchmark_message_text = "GreenVest and the 50 / 50 risky-mix reference project the same 30-year value under the current assumptions."
 
-    if not both_excluded:
-        render_investor_charts_section(
-            both_excluded,
-            force_w1,
-            results,
-            a1,
-            a2,
-            invest,
-            "Investor Charts",
-            summary_pdf_bytes,
-            checkpoint_df,
-            benchmark_message_kind,
-            benchmark_message_text,
-        )
+    with top_results_slot:
+        if not both_excluded:
+            render_investor_charts_section(
+                both_excluded,
+                force_w1,
+                results,
+                a1,
+                a2,
+                invest,
+                "Investor Charts",
+                summary_pdf_bytes,
+                checkpoint_df,
+                benchmark_message_kind,
+                benchmark_message_text,
+            )
 
     with insight_col:
         st.markdown(
@@ -3135,8 +3216,9 @@ def render_dashboard():
                 """
                 1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
                 2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
-                3. The final portfolio recommendation is chosen by the utility formula `U = mu - (gamma / 2) * sigma^2 + lambda * ESG`.
-                4. Sector exclusions are enforced so blocked sectors cannot be recommended.
+                3. The optimiser chooses risky positions `x1` and `x2`, not weights that must sum to 100%, so the remainder can stay in the risk-free asset.
+                4. The final recommendation maximises `x'(mu - rf) - (gamma / 2) x'Sigma x + lambda * ESG_average`.
+                5. Sector exclusions are enforced so blocked sectors cannot be recommended.
                 """
             )
 
@@ -3158,12 +3240,17 @@ def render_dashboard():
             if lambda_used >= 0.06
             else "lighter sustainability preference"
         )
+        rf_position_label = (
+            f"Borrowing at rf: {abs(results['rf_weight']) * 100:.1f}%"
+            if results["rf_weight"] < 0
+            else f"Risk-free: {results['rf_weight'] * 100:.1f}%"
+        )
 
         st.markdown(
             f"""
             <div class="spotlight-card">
-                <div class="section-kicker">Recommended mix</div>
-                <h3>{a1["name"]}: {results["w1"] * 100:.1f}% | {a2["name"]}: {results["w2"] * 100:.1f}%</h3>
+                <div class="section-kicker">Recommended positions</div>
+                <h3>{a1["name"]}: {results["w1"] * 100:.1f}% | {a2["name"]}: {results["w2"] * 100:.1f}% | {rf_position_label}</h3>
                 <p>
                     GreenVest leans toward <strong>{high_esg_asset}</strong> for sustainability strength while
                     preserving return support from <strong>{high_return_asset}</strong>. With
@@ -3175,26 +3262,30 @@ def render_dashboard():
         )
 
         metric_row_1 = st.columns(2)
-        metric_row_1[0].metric("Expected return", f"{results['mu_opt'] * 100:.2f}%")
-        metric_row_1[1].metric("Portfolio risk", f"{results['sigma_opt'] * 100:.2f}%")
+        metric_row_1[0].metric(f"{a1['name']} position", f"{results['w1'] * 100:.2f}%")
+        metric_row_1[1].metric(f"{a2['name']} position", f"{results['w2'] * 100:.2f}%")
 
         metric_row_2 = st.columns(2)
-        metric_row_2[0].metric("Sharpe ratio", f"{results['sharpe_opt']:.3f}")
-        metric_row_2[1].metric("ESG score", f"{results['esg_opt'] * 100:.1f} / 100")
+        metric_row_2[0].metric("Risk-free position", f"{results['rf_weight'] * 100:.2f}%")
+        metric_row_2[1].metric("Expected return", f"{results['mu_opt'] * 100:.2f}%")
 
         metric_row_3 = st.columns(2)
-        metric_row_3[0].metric("ESG-adjusted Sharpe", f"{results['esg_sharpe_opt']:.3f}")
-        metric_row_3[1].metric("Impact score", f"{results['impact_score']:.1f}")
+        metric_row_3[0].metric("Portfolio risk", f"{results['sigma_opt'] * 100:.2f}%")
+        metric_row_3[1].metric("Sharpe ratio", f"{results['sharpe_opt']:.3f}")
 
         metric_row_4 = st.columns(2)
-        metric_row_4[0].metric("Trade-off score", f"{results['tradeoff']:.4f}")
-        metric_row_4[1].metric("Utility value", f"{results['utility_opt']:.5f}")
+        metric_row_4[0].metric("ESG score", f"{results['esg_opt'] * 100:.1f} / 100")
+        metric_row_4[1].metric("ESG-adjusted Sharpe", f"{results['esg_sharpe_opt']:.3f}")
+
+        metric_row_5 = st.columns(2)
+        metric_row_5[0].metric("Objective value", f"{results['utility_opt']:.5f}")
+        metric_row_5[1].metric("Impact score", f"{results['impact_score']:.1f}")
 
         if force_w1 is not None:
             excluded_name = a1["name"] if a1["is_excluded"] else a2["name"]
             remaining_name = a2["name"] if a1["is_excluded"] else a1["name"]
             st.warning(
-                f"Hard exclusion applied: {excluded_name} is blocked by the investor rules, so the portfolio moves fully into {remaining_name}."
+                f"Hard exclusion applied: {excluded_name} is blocked by the investor rules, so all risky exposure shifts into {remaining_name}."
             )
         elif results["ret_cost"] > 0.5:
             st.info(
