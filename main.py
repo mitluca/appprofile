@@ -3880,10 +3880,15 @@ def _legacy_render_dashboard_unused():
             st.success("The current sustainable preference set does not create a meaningful return penalty in this two-asset setup.")
 
 
-def render_dashboard_tabs(output_available: bool, active_tab: str):
-    tab_cols = st.columns([0.2, 0.2, 0.6], gap="small")
+def render_dashboard_tabs(output_available: bool, active_tab: str, slots=None):
+    if slots is None:
+        tab_cols = st.columns([0.2, 0.2, 0.6], gap="small")
+        builder_slot = tab_cols[0]
+        output_slot = tab_cols[1]
+    else:
+        builder_slot, output_slot = slots
 
-    with tab_cols[0]:
+    with builder_slot:
         if st.button(
             "Portfolio Builder",
             key=f"dashboard_tab_builder_{active_tab}_{'ready' if output_available else 'empty'}",
@@ -3894,7 +3899,7 @@ def render_dashboard_tabs(output_available: bool, active_tab: str):
                 st.session_state.dashboard_tab = "builder"
                 st.rerun()
 
-    with tab_cols[1]:
+    with output_slot:
         if output_available:
             if st.button(
                 "Portfolio Output",
@@ -3923,13 +3928,15 @@ def render_dashboard():
     s_w = st.session_state.s_w
     g_w = st.session_state.g_w
 
-    utility_cols = st.columns([0.14, 0.62, 0.24], gap="large")
+    output_ready = st.session_state.get("generated_snapshot") is not None
+    utility_cols = st.columns([0.14, 0.24, 0.24, 0.22], gap="small")
     with utility_cols[0]:
         st.markdown(
             f'<div class="dashboard-utility"><a class="dashboard-home-link" href="?nav=home" target="_self"><img src="{LOGO_DATA_URI}" alt="Go back home"></a></div>',
             unsafe_allow_html=True,
         )
-    with utility_cols[2]:
+    render_dashboard_tabs(output_ready, st.session_state.dashboard_tab, slots=(utility_cols[1], utility_cols[2]))
+    with utility_cols[3]:
         if st.button("Update Preferences"):
             st.session_state.show_profile_builder = True
             st.session_state.onboarding_step = 1
@@ -3940,12 +3947,6 @@ def render_dashboard():
         render_profile_builder(editing=st.session_state.onboarding_done)
 
     if st.session_state.dashboard_tab == "output" and st.session_state.get("generated_snapshot") is not None:
-        render_dashboard_tabs(True, "output")
-        output_actions = st.columns([0.28, 0.72], gap="small")
-        with output_actions[0]:
-            if st.button("Back to Portfolio Builder", key="back_to_builder", use_container_width=True):
-                st.session_state.dashboard_tab = "builder"
-                st.rerun()
         package = compute_portfolio_package(st.session_state.generated_snapshot)
         render_investor_charts_section(
             package["both_excluded"],
@@ -3963,7 +3964,6 @@ def render_dashboard():
         render_portfolio_output_panel(package)
         return
 
-    tab_slot = st.empty()
     a1 = None
     a2 = None
     current_signature = None
@@ -4137,9 +4137,6 @@ def render_dashboard():
         and st.session_state.generated_signature == current_signature
         and st.session_state.get("generated_snapshot") is not None
     )
-
-    with tab_slot.container():
-        render_dashboard_tabs(output_available, "builder")
 
     generate_disabled = current_signature is None
     if st.button("Generate Portfolio", use_container_width=True, disabled=generate_disabled):
