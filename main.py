@@ -574,7 +574,7 @@ def inject_styles():
             }
 
             .block-container {
-                padding-top: 1.1rem;
+                padding-top: 0.2rem;
                 padding-bottom: 4.5rem;
                 max-width: 1220px;
             }
@@ -1300,21 +1300,7 @@ def inject_styles():
                 align-items: center;
                 justify-content: space-between;
                 gap: 1rem;
-                margin: 0.15rem 0 1rem;
-            }
-
-            .workspace-topbar {
-                background: rgba(255, 255, 255, 0.84);
-                border: 1px solid rgba(46, 123, 83, 0.10);
-                border-radius: 28px;
-                box-shadow: 0 18px 34px rgba(24, 60, 43, 0.08);
-                padding: 0.85rem 1rem 0.95rem;
-                margin: -0.15rem 0 1.15rem;
-                backdrop-filter: blur(10px);
-            }
-
-            .workspace-topbar [data-testid="stHorizontalBlock"] {
-                align-items: center;
+                margin: 0 0 0.85rem;
             }
 
             .dashboard-home-link {
@@ -3943,7 +3929,6 @@ def render_dashboard():
     g_w = st.session_state.g_w
 
     output_ready = st.session_state.get("generated_snapshot") is not None
-    st.markdown('<div class="workspace-topbar">', unsafe_allow_html=True)
     utility_cols = st.columns([0.14, 0.24, 0.24, 0.22], gap="small")
     with utility_cols[0]:
         st.markdown(
@@ -3957,7 +3942,6 @@ def render_dashboard():
             st.session_state.onboarding_step = 1
             st.session_state.dashboard_tab = "builder"
             st.rerun()
-    st.markdown('</div>', unsafe_allow_html=True)
 
     if st.session_state.show_profile_builder:
         render_profile_builder(editing=st.session_state.onboarding_done)
