@@ -3941,6 +3941,11 @@ def render_dashboard():
 
     if st.session_state.dashboard_tab == "output" and st.session_state.get("generated_snapshot") is not None:
         render_dashboard_tabs(True, "output")
+        output_actions = st.columns([0.28, 0.72], gap="small")
+        with output_actions[0]:
+            if st.button("Back to Portfolio Builder", key="back_to_builder", use_container_width=True):
+                st.session_state.dashboard_tab = "builder"
+                st.rerun()
         package = compute_portfolio_package(st.session_state.generated_snapshot)
         render_investor_charts_section(
             package["both_excluded"],
