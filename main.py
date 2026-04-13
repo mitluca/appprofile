@@ -1550,14 +1550,14 @@ def style_axis(ax):
 
 def build_frontier_chart(
     sigma_grid,
-    esg_adjusted_grid,
+    return_grid,
     esg_grid,
     sigma_opt,
-    esg_adjusted_opt,
+    return_opt,
     sigma_financial,
-    esg_adjusted_financial,
+    return_financial,
     sigma_low_risk,
-    esg_adjusted_low_risk,
+    return_low_risk,
 ):
     fig, ax = plt.subplots(figsize=(8.2, 5.7))
     fig.patch.set_facecolor("#fcfffd")
@@ -1565,28 +1565,18 @@ def build_frontier_chart(
 
     sort_order = np.argsort(sigma_grid)
     sigma_sorted = np.asarray(sigma_grid)[sort_order]
-    esg_adjusted_sorted = np.asarray(esg_adjusted_grid)[sort_order]
+    return_sorted = np.asarray(return_grid)[sort_order]
     esg_sorted = np.asarray(esg_grid)[sort_order]
 
-    points = np.array([sigma_sorted, esg_adjusted_sorted]).T.reshape(-1, 1, 2)
+    points = np.array([sigma_sorted, return_sorted]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     collection = LineCollection(segments, cmap="YlGn", linewidth=4.2)
     collection.set_array(0.5 * (esg_sorted[:-1] + esg_sorted[1:]))
     ax.add_collection(collection)
     ax.autoscale()
-
-    ax.plot(
-        sigma_sorted,
-        esg_adjusted_sorted,
-        color="#afcdb7",
-        linestyle="--",
-        linewidth=1.3,
-        alpha=0.9,
-        label="Traditional frontier path",
-    )
     ax.scatter(
         sigma_opt,
-        esg_adjusted_opt,
+        return_opt,
         s=86,
         color="#1f6844",
         edgecolors="#ffffff",
@@ -1596,7 +1586,7 @@ def build_frontier_chart(
     )
     ax.scatter(
         sigma_financial,
-        esg_adjusted_financial,
+        return_financial,
         s=54,
         color="#2f7dca",
         edgecolors="#e8f3fd",
@@ -1607,7 +1597,7 @@ def build_frontier_chart(
 
     ax.annotate(
         "GreenVest recommendation",
-        xy=(sigma_opt, esg_adjusted_opt),
+        xy=(sigma_opt, return_opt),
         xytext=(16, 16),
         textcoords="offset points",
         fontsize=9.2,
@@ -1617,7 +1607,7 @@ def build_frontier_chart(
     )
     ax.scatter(
         sigma_low_risk,
-        esg_adjusted_low_risk,
+        return_low_risk,
         s=54,
         color="#5d9b79",
         edgecolors="#edf7f0",
@@ -1630,9 +1620,9 @@ def build_frontier_chart(
     colorbar.set_label("ESG score", color="#406854")
     colorbar.ax.tick_params(labelsize=9, colors="#406854")
 
-    ax.set_title("ESG Efficient Frontier", fontsize=15, fontweight="bold", color="#163a2a", pad=14)
+    ax.set_title("Efficient Frontier", fontsize=15, fontweight="bold", color="#163a2a", pad=14)
     ax.set_xlabel("Portfolio risk (std deviation)")
-    ax.set_ylabel("Expected return + ESG tilt")
+    ax.set_ylabel("Expected return")
     ax.legend(
         loc="lower right",
         fontsize=8.6,
@@ -1953,28 +1943,28 @@ def render_investor_charts_section(
     if force_w1 is None:
         frontier_fig = build_frontier_chart(
             results["sigma_grid"],
-            results["esg_adjusted_grid"],
+            results["mu_grid"],
             results["esg_grid"],
             results["sigma_opt"],
-            results["esg_adjusted_grid"][results["idx"]],
+            results["mu_opt"],
             results["sigma_ms"][results["idx_financial"]],
-            results["esg_adjusted_ms"][results["idx_financial"]],
+            results["mu_ms"][results["idx_financial"]],
             results["sigma_grid"][results["idx_low_risk"]],
-            results["esg_adjusted_grid"][results["idx_low_risk"]],
+            results["mu_grid"][results["idx_low_risk"]],
         )
         with chart_cols[0]:
-            st.markdown("#### ESG efficient frontier")
+            st.markdown("#### Efficient frontier")
             st.pyplot(frontier_fig)
             plt.close(frontier_fig)
             st.markdown(
-                '<div class="chart-caption">The frontier now highlights the recommendation more clearly and keeps the benchmark markers lighter.</div>',
+                '<div class="chart-caption">Expected return is shown on the y-axis, while the frontier color reflects ESG quality across the risky-asset mixes.</div>',
                 unsafe_allow_html=True,
             )
     else:
         with chart_cols[0]:
-            st.markdown("#### ESG efficient frontier")
+            st.markdown("#### Efficient frontier")
             st.info(
-                "The ESG efficient frontier only appears when both assets remain investable. Remove the exclusion to compare mixes again."
+                "The efficient frontier only appears when both assets remain investable. Remove the exclusion to compare mixes again."
             )
 
     selected_label = a1["name"] if results["w1"] >= results["w2"] else a2["name"]
