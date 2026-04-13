@@ -45,6 +45,10 @@ SECTORS = [
 ]
 
 CORNER_THRESHOLD = 0.002
+LAMBDA_MIN = 0.01
+LAMBDA_MAX = 0.20
+LAMBDA_DISPLAY_MIN = 1.0
+LAMBDA_DISPLAY_MAX = 10.0
 
 REVIEWS = [
     {
@@ -1536,6 +1540,18 @@ def derive_lambda(e_w, s_w, g_w, excl_count, goal_lam):
     return round(lam, 3)
 
 
+def lambda_to_display(lambda_value):
+    clipped = min(max(float(lambda_value), LAMBDA_MIN), LAMBDA_MAX)
+    scale = (clipped - LAMBDA_MIN) / (LAMBDA_MAX - LAMBDA_MIN)
+    return round(LAMBDA_DISPLAY_MIN + scale * (LAMBDA_DISPLAY_MAX - LAMBDA_DISPLAY_MIN), 1)
+
+
+def display_to_lambda(display_value):
+    clipped = min(max(float(display_value), LAMBDA_DISPLAY_MIN), LAMBDA_DISPLAY_MAX)
+    scale = (clipped - LAMBDA_DISPLAY_MIN) / (LAMBDA_DISPLAY_MAX - LAMBDA_DISPLAY_MIN)
+    return round(LAMBDA_MIN + scale * (LAMBDA_MAX - LAMBDA_MIN), 3)
+
+
 def style_axis(ax):
     ax.set_facecolor("#fcfffd")
     ax.set_axisbelow(True)
@@ -2057,12 +2073,12 @@ def sync_gamma_input():
 
 
 def sync_lambda_slider():
-    st.session_state.lambda_val = st.session_state._l_sl
+    st.session_state.lambda_val = display_to_lambda(st.session_state._l_sl)
     st.session_state._l_ni = st.session_state._l_sl
 
 
 def sync_lambda_input():
-    st.session_state.lambda_val = st.session_state._l_ni
+    st.session_state.lambda_val = display_to_lambda(st.session_state._l_ni)
     st.session_state._l_sl = st.session_state._l_ni
 
 
@@ -2917,6 +2933,8 @@ def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambli
     st.session_state.gamma_val = gamma
     st.session_state.lambda_esg = lambda_esg
     st.session_state.lambda_val = lambda_esg
+    st.session_state._l_sl = lambda_to_display(lambda_esg)
+    st.session_state._l_ni = lambda_to_display(lambda_esg)
     st.session_state.profile = profile
     st.session_state.goal_label = goal_labels[goal]
     st.session_state.onboarding_done = True
@@ -3493,9 +3511,9 @@ def render_dashboard():
         if "_g_ni" not in st.session_state:
             st.session_state._g_ni = st.session_state.gamma_val
         if "_l_sl" not in st.session_state:
-            st.session_state._l_sl = st.session_state.lambda_val
+            st.session_state._l_sl = lambda_to_display(st.session_state.lambda_val)
         if "_l_ni" not in st.session_state:
-            st.session_state._l_ni = st.session_state.lambda_val
+            st.session_state._l_ni = lambda_to_display(st.session_state.lambda_val)
 
         st.caption(
             "Use these only if you want to override the profile-derived risk aversion and ESG preference values."
@@ -3528,31 +3546,31 @@ def render_dashboard():
         lambda_cols = st.columns([4, 1])
         with lambda_cols[0]:
             st.slider(
-                "ESG preference",
-                0.01,
-                0.20,
-                st.session_state.lambda_val,
-                0.005,
+                "ESG preference (1-10)",
+                LAMBDA_DISPLAY_MIN,
+                LAMBDA_DISPLAY_MAX,
+                st.session_state._l_sl,
+                0.1,
                 key="_l_sl",
                 on_change=sync_lambda_slider,
-                help="Higher lambda gives sustainability a stronger role in the utility score.",
+                help="This 1-10 scale maps internally to lambda values from 0.01 to 0.20.",
             )
         with lambda_cols[1]:
             st.number_input(
-                "lambda exact",
-                0.01,
-                0.20,
-                st.session_state.lambda_val,
-                0.005,
+                "ESG preference exact",
+                LAMBDA_DISPLAY_MIN,
+                LAMBDA_DISPLAY_MAX,
+                st.session_state._l_ni,
+                0.1,
                 key="_l_ni",
                 on_change=sync_lambda_input,
-                format="%.3f",
+                format="%.1f",
                 label_visibility="collapsed",
             )
 
         st.info(
             f"Active values -> gamma = {st.session_state.gamma_val:.1f} | "
-            f"lambda = {st.session_state.lambda_val:.3f}"
+            f"ESG preference = {lambda_to_display(st.session_state.lambda_val):.1f} / 10"
         )
 
     st.write("")
