@@ -1,6 +1,8 @@
 from base64 import b64encode
 from datetime import datetime
 from io import BytesIO
+import hashlib
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -22,8 +24,10 @@ st.set_page_config(
 
 ROOT = Path(__file__).parent
 STATIC_DIR = ROOT / "static"
+RESULTS_DIR = ROOT / ".greenvest_results"
 LOGO_PATH = STATIC_DIR / "Sustainable growth and innovation logo.png"
 QUESTION_PATH = STATIC_DIR / "question.png"
+RESULTS_DIR.mkdir(exist_ok=True)
 
 SECTORS = [
     "Clean Energy",
@@ -1179,6 +1183,42 @@ def inject_styles():
                 border-color: rgba(46, 123, 83, 0.16);
             }
 
+            .output-launch {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                border-radius: 16px;
+                border: 1px solid rgba(46, 123, 83, 0.12);
+                background: linear-gradient(135deg, #469f6b, #78c995);
+                color: #ffffff !important;
+                font-weight: 800;
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+                padding: 0.78rem 1rem;
+                box-shadow: 0 14px 22px rgba(37, 100, 68, 0.12);
+                text-decoration: none !important;
+                text-align: center;
+                transition: transform 0.14s ease, opacity 0.14s ease, background 0.14s ease;
+            }
+
+            .output-launch:hover {
+                color: #ffffff !important;
+                background: linear-gradient(135deg, #53ad78, #88d2a2);
+                transform: translateY(-1px);
+            }
+
+            .output-launch.disabled {
+                opacity: 0.55;
+                pointer-events: none;
+            }
+
+            .results-note {
+                font-size: 0.9rem;
+                color: var(--ink-500);
+                margin-top: 0.55rem;
+                line-height: 1.6;
+            }
+
             .info-note {
                 padding: 1rem 1.05rem;
                 border-radius: 18px;
@@ -2331,6 +2371,507 @@ def build_generation_signature(setup_mode, rf, invest, rho, gamma_used, lambda_u
     )
 
 
+def serialize_asset_for_snapshot(asset: dict):
+    if asset is None:
+        return None
+
+    return {
+        "name": str(asset.get("name", "")),
+        "ticker": str(asset.get("ticker", "")),
+        "sector": str(asset.get("sector", "")),
+        "mu": float(asset.get("mu", 0.0)),
+        "sigma": float(asset.get("sigma", 0.0)),
+        "e": float(asset.get("e", 0.0)),
+        "s": float(asset.get("s", 0.0)),
+        "g": float(asset.get("g", 0.0)),
+        "esg_c": float(asset.get("esg_c", 0.0)),
+        "esg_a": float(asset.get("esg_a", 0.0)),
+        "is_excluded": bool(asset.get("is_excluded", False)),
+        "_live": bool(asset.get("_live", False)),
+        "_source": str(asset.get("_source", "")),
+        "_price": None if asset.get("_price") is None else float(asset.get("_price")),
+    }
+
+
+def build_result_snapshot(setup_mode, rf, invest, rho, gamma_used, lambda_used, e_w, s_w, g_w, profile, goal_label, excluded_labels, a1, a2):
+    return {
+        "setup_mode": setup_mode,
+        "rf": float(rf),
+        "invest": float(invest),
+        "rho": float(rho),
+        "gamma": float(gamma_used),
+        "lambda": float(lambda_used),
+        "e_w": int(e_w),
+        "s_w": int(s_w),
+        "g_w": int(g_w),
+        "profile": str(profile),
+        "goal_label": str(goal_label),
+        "excluded_labels": list(excluded_labels),
+        "asset1": serialize_asset_for_snapshot(a1),
+        "asset2": serialize_asset_for_snapshot(a2),
+    }
+
+
+def persist_result_snapshot(snapshot: dict):
+    payload = json.dumps(snapshot, sort_keys=True, separators=(",", ":"))
+    snapshot_id = hashlib.sha1(payload.encode("utf-8")).hexdigest()[:24]
+    snapshot_path = RESULTS_DIR / f"{snapshot_id}.json"
+    snapshot_path.write_text(payload, encoding="utf-8")
+    return snapshot_id
+
+
+def load_result_snapshot(snapshot_id: str):
+    if not snapshot_id:
+        return None
+
+    snapshot_path = RESULTS_DIR / f"{snapshot_id}.json"
+    if not snapshot_path.exists():
+        return None
+
+    try:
+        return json.loads(snapshot_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def compute_portfolio_package(snapshot: dict):
+    a1 = snapshot["asset1"]
+    a2 = snapshot["asset2"]
+    rf = float(snapshot["rf"])
+    invest = float(snapshot["invest"])
+    rho = float(snapshot["rho"])
+    gamma_used = float(snapshot["gamma"])
+    lambda_used = float(snapshot["lambda"])
+    e_w = int(snapshot["e_w"])
+    s_w = int(snapshot["s_w"])
+    g_w = int(snapshot["g_w"])
+    profile = snapshot["profile"]
+    goal_label = snapshot["goal_label"]
+    excluded_labels = snapshot.get("excluded_labels", [])
+    excluded_summary = ", ".join(excluded_labels) if excluded_labels else "None"
+
+    both_excluded = a1["is_excluded"] and a2["is_excluded"]
+    force_w1 = None
+    if a1["is_excluded"] and not a2["is_excluded"]:
+        force_w1 = 0.0
+    elif a2["is_excluded"] and not a1["is_excluded"]:
+        force_w1 = 1.0
+
+    results = {}
+    summary_pdf_bytes = None
+    benchmark_message_kind = "info"
+    benchmark_message_text = ""
+    checkpoint_df = pd.DataFrame()
+    corner_solution_message = None
+
+    if not both_excluded:
+        (
+            mix_grid,
+            x1_grid,
+            x2_grid,
+            risky_share_grid,
+            mu_grid,
+            sigma_grid,
+            esg_grid,
+            objective_grid,
+            esg_adjusted_grid,
+            idx,
+        ) = optimise(
+            a1["mu"],
+            a2["mu"],
+            a1["sigma"],
+            a2["sigma"],
+            a1["esg_a"],
+            a2["esg_a"],
+            rho,
+            rf,
+            gamma_used,
+            lambda_used,
+            force_w1=force_w1,
+        )
+
+        w1 = float(x1_grid[idx])
+        w2 = float(x2_grid[idx])
+        risky_share = float(risky_share_grid[idx])
+        rf_weight = 1 - risky_share
+        mu_opt = float(mu_grid[idx])
+        sigma_opt = float(sigma_grid[idx])
+        esg_opt = float(esg_grid[idx])
+        utility_opt = float(objective_grid[idx])
+        sharpe_opt = (mu_opt - rf) / sigma_opt if sigma_opt > 0 else float("nan")
+        esg_sharpe_opt = esg_sharpe(mu_opt, rf, sigma_opt, lambda_used, esg_opt)
+        impact_score = round(esg_opt * 100, 1)
+        tradeoff = lambda_used * esg_opt - (gamma_used / 2) * (sigma_opt ** 2)
+
+        benchmark_return = None
+        ret_cost = 0.0
+        idx_financial = None
+        idx_low_risk = None
+        mu_50 = None
+        sigma_ms = None
+        esg_adjusted_ms = None
+        x1_ms = None
+        x2_ms = None
+        risky_share_ms = None
+        mu_ms = None
+
+        if force_w1 is None:
+            (
+                _,
+                x1_ms,
+                x2_ms,
+                risky_share_ms,
+                mu_ms,
+                sigma_ms,
+                _esg_ms,
+                _objective_ms,
+                esg_adjusted_ms,
+                idx_financial,
+            ) = optimise(
+                a1["mu"],
+                a2["mu"],
+                a1["sigma"],
+                a2["sigma"],
+                a1["esg_a"],
+                a2["esg_a"],
+                rho,
+                rf,
+                gamma_used,
+                0.0,
+            )
+            positive_risky_mask = risky_share_grid > 1e-8
+            if np.any(positive_risky_mask):
+                idx_low_risk = int(np.argmin(np.where(positive_risky_mask, sigma_grid, np.inf)))
+            else:
+                idx_low_risk = int(np.argmin(sigma_grid))
+
+            (
+                _,
+                _x1_50,
+                _x2_50,
+                _risky_share_50,
+                mu_50_grid,
+                _sigma_50_grid,
+                _esg_50_grid,
+                _objective_50_grid,
+                _esg_adjusted_50_grid,
+                idx_50,
+            ) = optimise(
+                a1["mu"],
+                a2["mu"],
+                a1["sigma"],
+                a2["sigma"],
+                a1["esg_a"],
+                a2["esg_a"],
+                rho,
+                rf,
+                gamma_used,
+                0.0,
+                force_w1=0.5,
+            )
+            benchmark_return = float(mu_50_grid[idx_50])
+            mu_50 = benchmark_return
+            ret_cost = mu_ms[idx_financial] * 100 - mu_opt * 100
+
+        results = {
+            "mix_grid": mix_grid,
+            "x1_grid": x1_grid,
+            "x2_grid": x2_grid,
+            "risky_share_grid": risky_share_grid,
+            "mu_grid": mu_grid,
+            "sigma_grid": sigma_grid,
+            "esg_grid": esg_grid,
+            "esg_adjusted_grid": esg_adjusted_grid,
+            "idx": idx,
+            "w1": w1,
+            "w2": w2,
+            "rf_weight": rf_weight,
+            "risky_share": risky_share,
+            "mu_opt": mu_opt,
+            "sigma_opt": sigma_opt,
+            "esg_opt": esg_opt,
+            "utility_opt": utility_opt,
+            "sharpe_opt": sharpe_opt,
+            "esg_sharpe_opt": esg_sharpe_opt,
+            "impact_score": impact_score,
+            "tradeoff": tradeoff,
+            "benchmark_return": benchmark_return,
+            "ret_cost": ret_cost,
+            "idx_financial": idx_financial,
+            "idx_low_risk": idx_low_risk,
+            "mu_ms": mu_ms,
+            "sigma_ms": sigma_ms,
+            "esg_adjusted_ms": esg_adjusted_ms,
+            "x1_ms": x1_ms,
+            "x2_ms": x2_ms,
+            "risky_share_ms": risky_share_ms,
+            "mu_50": mu_50,
+        }
+
+        if force_w1 is None and results["risky_share"] > 0:
+            corner_asset = None
+            if results["w1"] < CORNER_THRESHOLD * results["risky_share"]:
+                corner_asset = a2["name"]
+                zero_asset = a1["name"]
+            elif results["w2"] < CORNER_THRESHOLD * results["risky_share"]:
+                corner_asset = a1["name"]
+                zero_asset = a2["name"]
+
+            if corner_asset is not None:
+                corner_solution_message = (
+                    f"**Corner solution detected.** At your current ESG preference "
+                    f"(λ = {lambda_used:.3f}), holding any allocation in "
+                    f"**{zero_asset}** reduces portfolio utility. The optimiser has "
+                    f"placed the entire risky sleeve in **{corner_asset}**. "
+                    f"This is economically meaningful: your sustainability preference "
+                    f"is strong enough that diversification into the lower-ESG asset "
+                    f"is not worth the trade-off. To restore a mixed portfolio, lower λ "
+                    f"or choose an asset pair with more similar ESG scores."
+                )
+
+        summary_pdf_bytes = build_summary_pdf_bytes(
+            a1,
+            a2,
+            results,
+            invest,
+            profile,
+            goal_label,
+            gamma_used,
+            lambda_used,
+            e_w,
+            s_w,
+            g_w,
+            excluded_summary,
+        )
+
+        checkpoint_years = [5, 10, 20, 30]
+        checkpoint_df = pd.DataFrame(
+            {
+                "Horizon": [f"{year} years" for year in checkpoint_years],
+                "GreenVest": [f"GBP {future_value(invest, results['mu_opt'], year):,.0f}" for year in checkpoint_years],
+            }
+        )
+        if results["benchmark_return"] is not None:
+            checkpoint_df["50 / 50 risky mix"] = [
+                f"GBP {future_value(invest, results['benchmark_return'], year):,.0f}"
+                for year in checkpoint_years
+            ]
+            recommendation_30 = future_value(invest, results["mu_opt"], 30)
+            benchmark_30 = future_value(invest, results["benchmark_return"], 30)
+            if recommendation_30 > benchmark_30:
+                benchmark_message_kind = "success"
+                benchmark_message_text = (
+                    f"GreenVest is projected to outperform the 50 / 50 risky-mix reference by GBP {recommendation_30 - benchmark_30:,.0f} over 30 years."
+                )
+            elif benchmark_30 > recommendation_30:
+                benchmark_message_kind = "info"
+                benchmark_message_text = (
+                    f"The 50 / 50 risky-mix reference projects GBP {benchmark_30 - recommendation_30:,.0f} more over 30 years under the current assumptions."
+                )
+            else:
+                benchmark_message_kind = "info"
+                benchmark_message_text = (
+                    "GreenVest and the 50 / 50 risky-mix reference project the same 30-year value under the current assumptions."
+                )
+
+    return {
+        "setup_mode": snapshot["setup_mode"],
+        "profile": profile,
+        "goal_label": goal_label,
+        "rf": rf,
+        "invest": invest,
+        "rho": rho,
+        "gamma_used": gamma_used,
+        "lambda_used": lambda_used,
+        "e_w": e_w,
+        "s_w": s_w,
+        "g_w": g_w,
+        "excluded_labels": excluded_labels,
+        "excluded_summary": excluded_summary,
+        "a1": a1,
+        "a2": a2,
+        "both_excluded": both_excluded,
+        "force_w1": force_w1,
+        "results": results,
+        "summary_pdf_bytes": summary_pdf_bytes,
+        "benchmark_message_kind": benchmark_message_kind,
+        "benchmark_message_text": benchmark_message_text,
+        "checkpoint_df": checkpoint_df,
+        "corner_solution_message": corner_solution_message,
+    }
+
+
+def render_portfolio_output_panel(package: dict):
+    a1 = package["a1"]
+    a2 = package["a2"]
+    both_excluded = package["both_excluded"]
+    force_w1 = package["force_w1"]
+    results = package["results"]
+    gamma_used = package["gamma_used"]
+    lambda_used = package["lambda_used"]
+    corner_solution_message = package["corner_solution_message"]
+
+    st.markdown(
+        """
+        <div class="section-kicker">Portfolio recommendation</div>
+        <h3 class="section-title">Portfolio output</h3>
+        <p class="section-copy">
+            The recommendation below explains the mix, the core metrics, and the sustainability trade-off.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("How GreenVest scores ESG", expanded=False):
+        st.markdown(
+            """
+            1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
+            2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
+            3. The optimiser chooses risky positions `x1` and `x2`, not weights that must sum to 100%, so the remainder can stay in the risk-free asset.
+            4. The final recommendation maximises `x'(mu - rf) - (gamma / 2) x'Sigma x + lambda * ESG_average`.
+            5. Sector exclusions are enforced so blocked sectors cannot be recommended.
+            """
+        )
+
+    if both_excluded:
+        st.error(
+            "Both selected assets sit inside excluded sectors. Update the exclusions or choose different assets."
+        )
+        return
+
+    if corner_solution_message:
+        st.info(corner_solution_message)
+
+    high_esg_asset = a1["name"] if a1["esg_a"] >= a2["esg_a"] else a2["name"]
+    high_return_asset = a1["name"] if a1["mu"] >= a2["mu"] else a2["name"]
+    gamma_desc = (
+        "high risk aversion" if gamma_used >= 7 else "moderate risk aversion" if gamma_used >= 4 else "lower risk aversion"
+    )
+    lambda_desc = (
+        "strong sustainability preference"
+        if lambda_used >= 0.12
+        else "balanced sustainability preference"
+        if lambda_used >= 0.06
+        else "lighter sustainability preference"
+    )
+    rf_position_label = (
+        f"Borrowing at rf: {abs(results['rf_weight']) * 100:.1f}%"
+        if results["rf_weight"] < 0
+        else f"Risk-free: {results['rf_weight'] * 100:.1f}%"
+    )
+
+    st.markdown(
+        f"""
+        <div class="spotlight-card">
+            <div class="section-kicker">Recommended positions</div>
+            <h3>{a1["name"]}: {results["w1"] * 100:.1f}% | {a2["name"]}: {results["w2"] * 100:.1f}% | {rf_position_label}</h3>
+            <p>
+                GreenVest leans toward <strong>{high_esg_asset}</strong> for sustainability strength while
+                preserving return support from <strong>{high_return_asset}</strong>. With
+                <strong>{gamma_desc}</strong> and a <strong>{lambda_desc}</strong>, the optimiser searches for a cleaner balance between return, risk, and ESG quality.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    metric_row_1 = st.columns(2)
+    metric_row_1[0].metric(f"{a1['name']} position", f"{results['w1'] * 100:.2f}%")
+    metric_row_1[1].metric(f"{a2['name']} position", f"{results['w2'] * 100:.2f}%")
+
+    metric_row_2 = st.columns(2)
+    metric_row_2[0].metric("Risk-free position", f"{results['rf_weight'] * 100:.2f}%")
+    metric_row_2[1].metric("Expected return", f"{results['mu_opt'] * 100:.2f}%")
+
+    metric_row_3 = st.columns(2)
+    metric_row_3[0].metric("Portfolio risk", f"{results['sigma_opt'] * 100:.2f}%")
+    metric_row_3[1].metric("Sharpe ratio", f"{results['sharpe_opt']:.3f}")
+
+    metric_row_4 = st.columns(2)
+    metric_row_4[0].metric("ESG score", f"{results['esg_opt'] * 100:.1f} / 100")
+    metric_row_4[1].metric("ESG-adjusted Sharpe", f"{results['esg_sharpe_opt']:.3f}")
+
+    metric_row_5 = st.columns(2)
+    metric_row_5[0].metric("Objective value", f"{results['utility_opt']:.5f}")
+    metric_row_5[1].metric("Impact score", f"{results['impact_score']:.1f}")
+
+    if force_w1 is not None:
+        excluded_name = a1["name"] if a1["is_excluded"] else a2["name"]
+        held_name = a2["name"] if a1["is_excluded"] else a1["name"]
+        st.warning(
+            f"Hard exclusion applied: {excluded_name} is blocked, so the risky sleeve moves fully into {held_name}."
+        )
+    elif results["benchmark_return"] is not None and results["ret_cost"] > 0.5:
+        st.info(
+            f"Compared with a purely financial benchmark, this sustainable tilt gives up about {results['ret_cost']:.2f}% of expected return."
+        )
+    else:
+        st.success(
+            "The current sustainable preference set does not create a meaningful return penalty in this two-asset setup."
+        )
+
+
+def render_results_page(snapshot: dict):
+    package = compute_portfolio_package(snapshot)
+    setup_label = "Create Your Own" if package["setup_mode"] == "manual" else "Generate For Me"
+
+    utility_cols = st.columns([0.14, 0.62, 0.24], gap="large")
+    with utility_cols[0]:
+        st.markdown(
+            f'<div class="dashboard-utility"><a class="dashboard-home-link" href="?nav=home" target="_self"><img src="{LOGO_DATA_URI}" alt="Go back home"></a></div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        f"""
+        <section class="dashboard-hero">
+            <div class="dashboard-head">
+                <div>
+                    <div class="section-kicker">{setup_label}</div>
+                    <h2 class="dashboard-title">Portfolio Results</h2>
+                    <p class="dashboard-copy">Everything from the GreenVest recommendation is collected here in one clean output view.</p>
+                    <div class="chip-row">
+                        <span class="chip">{package["profile"]}</span>
+                        <span class="chip blue">{package["goal_label"]}</span>
+                        <span class="chip">gamma = {package["gamma_used"]:.1f}</span>
+                        <span class="chip">lambda = {package["lambda_used"]:.3f}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    render_investor_charts_section(
+        package["both_excluded"],
+        package["force_w1"],
+        package["results"],
+        package["a1"],
+        package["a2"],
+        package["invest"],
+        "Investor Charts",
+        package["summary_pdf_bytes"],
+        package["checkpoint_df"],
+        package["benchmark_message_kind"],
+        package["benchmark_message_text"],
+    )
+
+    result_cols = st.columns([1.05, 0.95], gap="large")
+    with result_cols[0]:
+        render_portfolio_output_panel(package)
+    with result_cols[1]:
+        st.markdown(
+            """
+            <div class="section-kicker">Selected assets</div>
+            <h3 class="section-title">Assets in this result</h3>
+            <p class="section-copy">These are the two risky assets used in the optimisation shown above.</p>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(render_asset_card_html(package["a1"]), unsafe_allow_html=True)
+        st.markdown(render_asset_card_html(package["a2"]), unsafe_allow_html=True)
+
 def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambling, excl_fossil, excl_alcohol):
     st.session_state.e_w = e_w
     st.session_state.s_w = s_w
@@ -2822,7 +3363,7 @@ def handle_entry_actions():
         return
 
 
-def render_dashboard():
+def _legacy_render_dashboard_unused():
     setup_mode = st.session_state.setup_mode or "manual"
     is_manual_mode = setup_mode == "manual"
     gamma_used = st.session_state.gamma_val
@@ -3327,10 +3868,269 @@ def render_dashboard():
             )
         else:
             st.success("The current sustainable preference set does not create a meaningful return penalty in this two-asset setup.")
+def render_dashboard():
+    setup_mode = st.session_state.setup_mode or "manual"
+    is_manual_mode = setup_mode == "manual"
+    gamma_used = st.session_state.gamma_val
+    lambda_used = st.session_state.lambda_val
+    e_w = st.session_state.e_w
+    s_w = st.session_state.s_w
+    g_w = st.session_state.g_w
+
+    utility_cols = st.columns([0.14, 0.62, 0.24], gap="large")
+    with utility_cols[0]:
+        st.markdown(
+            f'<div class="dashboard-utility"><a class="dashboard-home-link" href="?nav=home" target="_self"><img src="{LOGO_DATA_URI}" alt="Go back home"></a></div>',
+            unsafe_allow_html=True,
+        )
+    with utility_cols[2]:
+        if st.button("Update Preferences"):
+            st.session_state.show_profile_builder = True
+            st.session_state.onboarding_step = 1
+            st.rerun()
+
+    if st.session_state.show_profile_builder:
+        render_profile_builder(editing=st.session_state.onboarding_done)
+
+    builder_col, insight_col = st.columns([1.34, 0.66], gap="large")
+    a1 = None
+    a2 = None
+    results_url = None
+
+    with builder_col:
+        if is_manual_mode:
+            st.markdown(
+                """
+                <div class="section-kicker">Portfolio builder</div>
+                <h3 class="section-title">Enter your asset assumptions</h3>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with st.expander("Advanced controls for gamma and lambda", expanded=False):
+            if "_g_sl" not in st.session_state:
+                st.session_state._g_sl = st.session_state.gamma_val
+            if "_g_ni" not in st.session_state:
+                st.session_state._g_ni = st.session_state.gamma_val
+            if "_l_sl" not in st.session_state:
+                st.session_state._l_sl = st.session_state.lambda_val
+            if "_l_ni" not in st.session_state:
+                st.session_state._l_ni = st.session_state.lambda_val
+
+            st.caption(
+                "Use these only if you want to override the profile-derived risk aversion and ESG preference values."
+            )
+
+            gamma_cols = st.columns([4, 1])
+            with gamma_cols[0]:
+                st.slider(
+                    "Risk aversion",
+                    1.0,
+                    10.0,
+                    st.session_state.gamma_val,
+                    0.1,
+                    key="_g_sl",
+                    on_change=sync_gamma_slider,
+                    help="Higher gamma means you are more sensitive to portfolio risk.",
+                )
+            with gamma_cols[1]:
+                st.number_input(
+                    "gamma exact",
+                    1.0,
+                    10.0,
+                    st.session_state.gamma_val,
+                    0.1,
+                    key="_g_ni",
+                    on_change=sync_gamma_input,
+                    label_visibility="collapsed",
+                )
+
+            lambda_cols = st.columns([4, 1])
+            with lambda_cols[0]:
+                st.slider(
+                    "ESG preference",
+                    0.01,
+                    0.20,
+                    st.session_state.lambda_val,
+                    0.005,
+                    key="_l_sl",
+                    on_change=sync_lambda_slider,
+                    help="Higher lambda gives sustainability a stronger role in the utility score.",
+                )
+            with lambda_cols[1]:
+                st.number_input(
+                    "lambda exact",
+                    0.01,
+                    0.20,
+                    st.session_state.lambda_val,
+                    0.005,
+                    key="_l_ni",
+                    on_change=sync_lambda_input,
+                    format="%.3f",
+                    label_visibility="collapsed",
+                )
+
+            st.info(
+                f"Active values -> gamma = {st.session_state.gamma_val:.1f} | "
+                f"lambda = {st.session_state.lambda_val:.3f}"
+            )
+
+        st.write("")
+        market_cols = st.columns(2)
+        with market_cols[0]:
+            rf = st.number_input(
+                "Risk-free rate (%)",
+                min_value=0.0,
+                max_value=20.0,
+                value=4.5,
+                step=0.1,
+            ) / 100
+        with market_cols[1]:
+            invest = st.number_input(
+                "Investment amount (GBP)",
+                min_value=100.0,
+                max_value=1_000_000.0,
+                value=10_000.0,
+                step=500.0,
+            )
+
+        st.markdown(
+            f"""
+            <div class="info-note">
+                Excluded sectors: <strong>{", ".join(excluded_sector_labels())}</strong>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        excluded_sectors = get_excluded_sectors()
+        asset_cols = st.columns(2, gap="medium")
+        with asset_cols[0]:
+            if is_manual_mode:
+                a1 = render_manual_asset_input(1, excluded_sectors)
+            else:
+                a1 = render_asset_selector(
+                    1,
+                    excluded_sectors,
+                    allowed_modes=["curated", "search"],
+                    filter_excluded_curated=True,
+                )
+        with asset_cols[1]:
+            if is_manual_mode:
+                a2 = render_manual_asset_input(2, excluded_sectors)
+            else:
+                a2 = render_asset_selector(
+                    2,
+                    excluded_sectors,
+                    allowed_modes=["curated", "search"],
+                    filter_excluded_curated=True,
+                )
+
+        if not is_manual_mode and st.session_state.onboarding_done and a1 is not None and a2 is not None:
+            st.info(
+                f"GreenVest has pre-selected {a1['name']} and {a2['name']} from your preferences. "
+                "You can keep them or swap them before generating the portfolio."
+            )
+
+        st.write("")
+        rho = st.slider(
+            "Correlation between the two assets",
+            -1.0,
+            1.0,
+            0.3,
+            0.01,
+            help="-1 means the assets move opposite to each other. 1 means they move together.",
+        )
+
+        if st.session_state.onboarding_done and a1 is not None and a2 is not None:
+            snapshot = build_result_snapshot(
+                setup_mode,
+                rf,
+                invest,
+                rho,
+                gamma_used,
+                lambda_used,
+                e_w,
+                s_w,
+                g_w,
+                st.session_state.profile,
+                st.session_state.goal_label,
+                excluded_sector_labels(),
+                a1,
+                a2,
+            )
+            snapshot_id = persist_result_snapshot(snapshot)
+            results_url = f"?view=results&snapshot={snapshot_id}"
+
+        if results_url is None:
+            st.markdown(
+                '<div class="output-launch disabled">Generate Portfolio</div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f'<a class="output-launch" href="{results_url}" target="_blank" rel="noopener noreferrer">Generate Portfolio</a>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                '<div class="results-note">Opens the full GreenVest output in a new tab.</div>',
+                unsafe_allow_html=True,
+            )
+
+        if not st.session_state.onboarding_done:
+            st.info("Complete your investor preferences popup first, then generate your portfolio.")
+        elif a1 is None or a2 is None:
+            st.info("Complete both asset sections to unlock the portfolio recommendation.")
+
+    with insight_col:
+        st.markdown(
+            """
+            <div class="section-kicker">Output preview</div>
+            <h3 class="section-title">Ready to generate</h3>
+            <p class="section-copy">
+                GreenVest will open the full results in a new tab, with the charts, projection table, recommendation, and export materials together.
+            </p>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.expander("How GreenVest scores ESG", expanded=False):
+            st.markdown(
+                """
+                1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
+                2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
+                3. The optimiser chooses risky positions `x1` and `x2`, not weights that must sum to 100%, so the remainder can stay in the risk-free asset.
+                4. The final recommendation maximises `x'(mu - rf) - (gamma / 2) x'Sigma x + lambda * ESG_average`.
+                5. Sector exclusions are enforced so blocked sectors cannot be recommended.
+                """
+            )
+
+        if a1 is not None and a2 is not None:
+            st.markdown(render_asset_card_html(a1), unsafe_allow_html=True)
+            st.markdown(render_asset_card_html(a2), unsafe_allow_html=True)
+        elif not st.session_state.onboarding_done:
+            st.info("Set your investor preferences first, then complete both assets to unlock the result view.")
+        else:
+            st.info("Complete both asset sections to prepare the portfolio output tab.")
 
 
 initialize_session_state()
 inject_styles()
+
+if get_query_param("view") == "results":
+    snapshot = load_result_snapshot(get_query_param("snapshot"))
+    if snapshot is None:
+        utility_cols = st.columns([0.14, 0.62, 0.24], gap="large")
+        with utility_cols[0]:
+            st.markdown(
+                f'<div class="dashboard-utility"><a class="dashboard-home-link" href="?nav=home" target="_self"><img src="{LOGO_DATA_URI}" alt="Go back home"></a></div>',
+                unsafe_allow_html=True,
+            )
+        st.error("This portfolio result could not be loaded. Generate it again from the builder.")
+    else:
+        render_results_page(snapshot)
+    st.stop()
+
 handle_entry_actions()
 
 if not st.session_state.loader_complete:
