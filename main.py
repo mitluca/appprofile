@@ -451,6 +451,8 @@ def reset_home_state():
     st.session_state.asset1_ticker = "AAPL"
     st.session_state.asset2_ticker = "MSFT"
     st.session_state.generated_signature = None
+    st.session_state.generated_snapshot = None
+    st.session_state.dashboard_tab = "builder"
     st.session_state.loader_context = "launch"
     clear_query_params()
 
@@ -2944,6 +2946,8 @@ def apply_profile_results(e_w, s_w, g_w, excl_tobacco, excl_weapons, excl_gambli
     st.session_state.show_profile_builder = False
     st.session_state.onboarding_step = 1
     st.session_state.generated_signature = None
+    st.session_state.generated_snapshot = None
+    st.session_state.dashboard_tab = "builder"
     st.rerun()
 
 
@@ -3323,6 +3327,8 @@ def initialize_session_state():
         "asset1_ticker": "AAPL",
         "asset2_ticker": "MSFT",
         "generated_signature": None,
+        "generated_snapshot": None,
+        "dashboard_tab": "builder",
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -3347,6 +3353,8 @@ def handle_entry_actions():
         st.session_state.show_profile_builder = True
         st.session_state.onboarding_step = 1
         st.session_state.generated_signature = None
+        st.session_state.generated_snapshot = None
+        st.session_state.dashboard_tab = "builder"
         clear_query_params()
         return
 
@@ -3359,6 +3367,8 @@ def handle_entry_actions():
         st.session_state.onboarding_step = 1
         st.session_state.onboarding_done = False
         st.session_state.generated_signature = None
+        st.session_state.generated_snapshot = None
+        st.session_state.dashboard_tab = "builder"
         clear_query_params()
         return
 
@@ -3868,7 +3878,287 @@ def _legacy_render_dashboard_unused():
             )
         else:
             st.success("The current sustainable preference set does not create a meaningful return penalty in this two-asset setup.")
+
+
+def render_dashboard_tabs(output_available: bool, active_tab: str):
+    tab_cols = st.columns([0.2, 0.2, 0.6], gap="small")
+
+    with tab_cols[0]:
+        if st.button(
+            "Portfolio Builder",
+            key=f"dashboard_tab_builder_{active_tab}_{'ready' if output_available else 'empty'}",
+            type="primary" if active_tab == "builder" else "secondary",
+            use_container_width=True,
+        ):
+            if st.session_state.dashboard_tab != "builder":
+                st.session_state.dashboard_tab = "builder"
+                st.rerun()
+
+    with tab_cols[1]:
+        if output_available:
+            if st.button(
+                "Portfolio Output",
+                key=f"dashboard_tab_output_{active_tab}",
+                type="primary" if active_tab == "output" else "secondary",
+                use_container_width=True,
+            ):
+                if st.session_state.dashboard_tab != "output":
+                    st.session_state.dashboard_tab = "output"
+                    st.rerun()
+        else:
+            st.button(
+                "Portfolio Output",
+                key="dashboard_tab_output_disabled",
+                disabled=True,
+                use_container_width=True,
+            )
+
+
 def render_dashboard():
+    setup_mode = st.session_state.setup_mode or "manual"
+    is_manual_mode = setup_mode == "manual"
+    gamma_used = st.session_state.gamma_val
+    lambda_used = st.session_state.lambda_val
+    e_w = st.session_state.e_w
+    s_w = st.session_state.s_w
+    g_w = st.session_state.g_w
+
+    utility_cols = st.columns([0.14, 0.62, 0.24], gap="large")
+    with utility_cols[0]:
+        st.markdown(
+            f'<div class="dashboard-utility"><a class="dashboard-home-link" href="?nav=home" target="_self"><img src="{LOGO_DATA_URI}" alt="Go back home"></a></div>',
+            unsafe_allow_html=True,
+        )
+    with utility_cols[2]:
+        if st.button("Update Preferences"):
+            st.session_state.show_profile_builder = True
+            st.session_state.onboarding_step = 1
+            st.session_state.dashboard_tab = "builder"
+            st.rerun()
+
+    if st.session_state.show_profile_builder:
+        render_profile_builder(editing=st.session_state.onboarding_done)
+
+    if st.session_state.dashboard_tab == "output" and st.session_state.get("generated_snapshot") is not None:
+        render_dashboard_tabs(True, "output")
+        package = compute_portfolio_package(st.session_state.generated_snapshot)
+        render_investor_charts_section(
+            package["both_excluded"],
+            package["force_w1"],
+            package["results"],
+            package["a1"],
+            package["a2"],
+            package["invest"],
+            "Investor Charts",
+            package["summary_pdf_bytes"],
+            package["checkpoint_df"],
+            package["benchmark_message_kind"],
+            package["benchmark_message_text"],
+        )
+        render_portfolio_output_panel(package)
+        return
+
+    tab_slot = st.empty()
+    a1 = None
+    a2 = None
+    current_signature = None
+    snapshot = None
+
+    if is_manual_mode:
+        st.markdown(
+            """
+            <div class="section-kicker">Portfolio builder</div>
+            <h3 class="section-title">Enter your asset assumptions</h3>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with st.expander("Advanced controls for gamma and lambda", expanded=False):
+        if "_g_sl" not in st.session_state:
+            st.session_state._g_sl = st.session_state.gamma_val
+        if "_g_ni" not in st.session_state:
+            st.session_state._g_ni = st.session_state.gamma_val
+        if "_l_sl" not in st.session_state:
+            st.session_state._l_sl = st.session_state.lambda_val
+        if "_l_ni" not in st.session_state:
+            st.session_state._l_ni = st.session_state.lambda_val
+
+        st.caption(
+            "Use these only if you want to override the profile-derived risk aversion and ESG preference values."
+        )
+
+        gamma_cols = st.columns([4, 1])
+        with gamma_cols[0]:
+            st.slider(
+                "Risk aversion",
+                1.0,
+                10.0,
+                st.session_state.gamma_val,
+                0.1,
+                key="_g_sl",
+                on_change=sync_gamma_slider,
+                help="Higher gamma means you are more sensitive to portfolio risk.",
+            )
+        with gamma_cols[1]:
+            st.number_input(
+                "gamma exact",
+                1.0,
+                10.0,
+                st.session_state.gamma_val,
+                0.1,
+                key="_g_ni",
+                on_change=sync_gamma_input,
+                label_visibility="collapsed",
+            )
+
+        lambda_cols = st.columns([4, 1])
+        with lambda_cols[0]:
+            st.slider(
+                "ESG preference",
+                0.01,
+                0.20,
+                st.session_state.lambda_val,
+                0.005,
+                key="_l_sl",
+                on_change=sync_lambda_slider,
+                help="Higher lambda gives sustainability a stronger role in the utility score.",
+            )
+        with lambda_cols[1]:
+            st.number_input(
+                "lambda exact",
+                0.01,
+                0.20,
+                st.session_state.lambda_val,
+                0.005,
+                key="_l_ni",
+                on_change=sync_lambda_input,
+                format="%.3f",
+                label_visibility="collapsed",
+            )
+
+        st.info(
+            f"Active values -> gamma = {st.session_state.gamma_val:.1f} | "
+            f"lambda = {st.session_state.lambda_val:.3f}"
+        )
+
+    st.write("")
+    market_cols = st.columns(2)
+    with market_cols[0]:
+        rf = st.number_input(
+            "Risk-free rate (%)",
+            min_value=0.0,
+            max_value=20.0,
+            value=4.5,
+            step=0.1,
+        ) / 100
+    with market_cols[1]:
+        invest = st.number_input(
+            "Investment amount (GBP)",
+            min_value=100.0,
+            max_value=1_000_000.0,
+            value=10_000.0,
+            step=500.0,
+        )
+
+    st.markdown(
+        f"""
+        <div class="info-note">
+            Excluded sectors: <strong>{", ".join(excluded_sector_labels())}</strong>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    excluded_sectors = get_excluded_sectors()
+    asset_cols = st.columns(2, gap="medium")
+    with asset_cols[0]:
+        if is_manual_mode:
+            a1 = render_manual_asset_input(1, excluded_sectors)
+        else:
+            a1 = render_asset_selector(
+                1,
+                excluded_sectors,
+                allowed_modes=["curated", "search"],
+                filter_excluded_curated=True,
+            )
+    with asset_cols[1]:
+        if is_manual_mode:
+            a2 = render_manual_asset_input(2, excluded_sectors)
+        else:
+            a2 = render_asset_selector(
+                2,
+                excluded_sectors,
+                allowed_modes=["curated", "search"],
+                filter_excluded_curated=True,
+            )
+
+    if not is_manual_mode and st.session_state.onboarding_done and a1 is not None and a2 is not None:
+        st.info(
+            f"GreenVest has pre-selected {a1['name']} and {a2['name']} from your preferences. "
+            "You can keep them or swap them before generating the portfolio."
+        )
+
+    st.write("")
+    rho = st.slider(
+        "Correlation between the two assets",
+        -1.0,
+        1.0,
+        0.3,
+        0.01,
+        help="-1 means the assets move opposite to each other. 1 means they move together.",
+    )
+
+    if st.session_state.onboarding_done and a1 is not None and a2 is not None:
+        snapshot = build_result_snapshot(
+            setup_mode,
+            rf,
+            invest,
+            rho,
+            gamma_used,
+            lambda_used,
+            e_w,
+            s_w,
+            g_w,
+            st.session_state.profile,
+            st.session_state.goal_label,
+            excluded_sector_labels(),
+            a1,
+            a2,
+        )
+        current_signature = json.dumps(snapshot, sort_keys=True)
+
+    output_available = (
+        snapshot is not None
+        and st.session_state.generated_signature == current_signature
+        and st.session_state.get("generated_snapshot") is not None
+    )
+
+    with tab_slot.container():
+        render_dashboard_tabs(output_available, "builder")
+
+    generate_disabled = current_signature is None
+    if st.button("Generate Portfolio", use_container_width=True, disabled=generate_disabled):
+        st.session_state.generated_signature = current_signature
+        st.session_state.generated_snapshot = snapshot
+        st.session_state.dashboard_tab = "output"
+        st.rerun()
+
+    if not st.session_state.onboarding_done:
+        st.info("Complete your investor preferences popup first, then generate your portfolio.")
+    elif a1 is None or a2 is None:
+        st.info("Complete both asset sections to unlock the portfolio recommendation.")
+
+    with st.expander("How GreenVest scores ESG", expanded=False):
+        st.markdown(
+            """
+            1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
+            2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
+            3. The optimiser chooses risky positions `x1` and `x2`, not weights that must sum to 100%, so the remainder can stay in the risk-free asset.
+            4. The final recommendation maximises `x'(mu - rf) - (gamma / 2) x'Sigma x + lambda * ESG_average`.
+            5. Sector exclusions are enforced so blocked sectors cannot be recommended.
+            """
+        )
+def _unused_duplicate_render_dashboard():
     setup_mode = st.session_state.setup_mode or "manual"
     is_manual_mode = setup_mode == "manual"
     gamma_used = st.session_state.gamma_val
