@@ -1563,16 +1563,21 @@ def build_frontier_chart(
     fig.patch.set_facecolor("#fcfffd")
     style_axis(ax)
 
-    points = np.array([sigma_grid, esg_adjusted_grid]).T.reshape(-1, 1, 2)
+    sort_order = np.argsort(sigma_grid)
+    sigma_sorted = np.asarray(sigma_grid)[sort_order]
+    esg_adjusted_sorted = np.asarray(esg_adjusted_grid)[sort_order]
+    esg_sorted = np.asarray(esg_grid)[sort_order]
+
+    points = np.array([sigma_sorted, esg_adjusted_sorted]).T.reshape(-1, 1, 2)
     segments = np.concatenate([points[:-1], points[1:]], axis=1)
     collection = LineCollection(segments, cmap="YlGn", linewidth=4.2)
-    collection.set_array(esg_grid)
+    collection.set_array(0.5 * (esg_sorted[:-1] + esg_sorted[1:]))
     ax.add_collection(collection)
     ax.autoscale()
 
     ax.plot(
-        sigma_grid,
-        esg_adjusted_grid,
+        sigma_sorted,
+        esg_adjusted_sorted,
         color="#afcdb7",
         linestyle="--",
         linewidth=1.3,
