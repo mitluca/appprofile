@@ -4147,17 +4147,6 @@ def render_dashboard():
         st.info("Complete your investor preferences popup first, then generate your portfolio.")
     elif a1 is None or a2 is None:
         st.info("Complete both asset sections to unlock the portfolio recommendation.")
-
-    with st.expander("How GreenVest scores ESG", expanded=False):
-        st.markdown(
-            """
-            1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
-            2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
-            3. The optimiser chooses risky positions `x1` and `x2`, not weights that must sum to 100%, so the remainder can stay in the risk-free asset.
-            4. The final recommendation maximises `x'(mu - rf) - (gamma / 2) x'Sigma x + lambda * ESG_average`.
-            5. Sector exclusions are enforced so blocked sectors cannot be recommended.
-            """
-        )
 def _unused_duplicate_render_dashboard():
     setup_mode = st.session_state.setup_mode or "manual"
     is_manual_mode = setup_mode == "manual"
