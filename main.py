@@ -3892,10 +3892,12 @@ def render_dashboard():
     if st.session_state.show_profile_builder:
         render_profile_builder(editing=st.session_state.onboarding_done)
 
+    top_results_slot = st.container()
     builder_col, insight_col = st.columns([1.34, 0.66], gap="large")
     a1 = None
     a2 = None
-    results_url = None
+    current_signature = None
+    snapshot = None
 
     with builder_col:
         if is_manual_mode:
@@ -4059,59 +4061,70 @@ def render_dashboard():
                 a1,
                 a2,
             )
-            snapshot_id = persist_result_snapshot(snapshot)
-            results_url = f"?view=results&snapshot={snapshot_id}"
+            current_signature = json.dumps(snapshot, sort_keys=True)
 
-        if results_url is None:
-            st.markdown(
-                '<div class="output-launch disabled">Generate Portfolio</div>',
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                f'<a class="output-launch" href="{results_url}" target="_blank" rel="noopener noreferrer">Generate Portfolio</a>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                '<div class="results-note">Opens the full GreenVest output in a new tab.</div>',
-                unsafe_allow_html=True,
-            )
+        generate_disabled = current_signature is None
+        if st.button("Generate Portfolio", use_container_width=True, disabled=generate_disabled):
+            st.session_state.generated_signature = current_signature
+            st.rerun()
 
         if not st.session_state.onboarding_done:
             st.info("Complete your investor preferences popup first, then generate your portfolio.")
         elif a1 is None or a2 is None:
             st.info("Complete both asset sections to unlock the portfolio recommendation.")
 
-    with insight_col:
-        st.markdown(
-            """
-            <div class="section-kicker">Output preview</div>
-            <h3 class="section-title">Ready to generate</h3>
-            <p class="section-copy">
-                GreenVest will open the full results in a new tab, with the charts, projection table, recommendation, and export materials together.
-            </p>
-            """,
-            unsafe_allow_html=True,
-        )
+    generated = snapshot is not None and st.session_state.generated_signature == current_signature
+    package = compute_portfolio_package(snapshot) if generated else None
 
-        with st.expander("How GreenVest scores ESG", expanded=False):
-            st.markdown(
-                """
-                1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
-                2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
-                3. The optimiser chooses risky positions `x1` and `x2`, not weights that must sum to 100%, so the remainder can stay in the risk-free asset.
-                4. The final recommendation maximises `x'(mu - rf) - (gamma / 2) x'Sigma x + lambda * ESG_average`.
-                5. Sector exclusions are enforced so blocked sectors cannot be recommended.
-                """
+    with top_results_slot:
+        if generated and package is not None:
+            render_investor_charts_section(
+                package["both_excluded"],
+                package["force_w1"],
+                package["results"],
+                package["a1"],
+                package["a2"],
+                package["invest"],
+                "Investor Charts",
+                package["summary_pdf_bytes"],
+                package["checkpoint_df"],
+                package["benchmark_message_kind"],
+                package["benchmark_message_text"],
             )
 
-        if a1 is not None and a2 is not None:
-            st.markdown(render_asset_card_html(a1), unsafe_allow_html=True)
-            st.markdown(render_asset_card_html(a2), unsafe_allow_html=True)
-        elif not st.session_state.onboarding_done:
-            st.info("Set your investor preferences first, then complete both assets to unlock the result view.")
+    with insight_col:
+        if generated and package is not None:
+            render_portfolio_output_panel(package)
         else:
-            st.info("Complete both asset sections to prepare the portfolio output tab.")
+            st.markdown(
+                """
+                <div class="section-kicker">Output preview</div>
+                <h3 class="section-title">Ready to generate</h3>
+                <p class="section-copy">
+                    GreenVest will show the full results in a dedicated section above, with the charts, projection table, recommendation, and export materials together.
+                </p>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            with st.expander("How GreenVest scores ESG", expanded=False):
+                st.markdown(
+                    """
+                    1. GreenVest starts with the environmental, social, and governance sub-scores entered for each asset.
+                    2. Those pillar scores are combined into one composite ESG score using your own E, S, and G priority weights.
+                    3. The optimiser chooses risky positions `x1` and `x2`, not weights that must sum to 100%, so the remainder can stay in the risk-free asset.
+                    4. The final recommendation maximises `x'(mu - rf) - (gamma / 2) x'Sigma x + lambda * ESG_average`.
+                    5. Sector exclusions are enforced so blocked sectors cannot be recommended.
+                    """
+                )
+
+            if a1 is not None and a2 is not None:
+                st.markdown(render_asset_card_html(a1), unsafe_allow_html=True)
+                st.markdown(render_asset_card_html(a2), unsafe_allow_html=True)
+            elif not st.session_state.onboarding_done:
+                st.info("Set your investor preferences first, then complete both assets to unlock the result view.")
+            else:
+                st.info("Complete both asset sections to prepare the portfolio output section.")
 
 
 initialize_session_state()
