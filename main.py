@@ -1750,7 +1750,7 @@ def build_summary_pdf_bytes(
             height_ratios=[0.88, 1.12],
             width_ratios=[1.05, 1.1, 1.05],
             hspace=0.28,
-            wspace=0.28,
+            wspace=0.42,
         )
 
         ax_header = fig.add_subplot(grid[0, :])
@@ -1837,8 +1837,22 @@ def build_summary_pdf_bytes(
         ax_alloc.set_xlabel("Position (% of wealth)")
         ax_alloc.set_title("Recommended positions", fontsize=13.5, fontweight="bold", color="#163a2a", pad=12)
         for idx, value in enumerate(allocation_values):
-            x_position = value + 2 if value >= 0 else value - 18
-            ax_alloc.text(x_position, idx, f"{value:.1f}%", va="center", fontsize=10.2, color="#224d38")
+            if value >= 0:
+                x_position = min(value + 1.5, upper_bound - 12)
+                ha = "left"
+            else:
+                x_position = max(value - 3.0, lower_bound + 12)
+                ha = "right"
+            ax_alloc.text(
+                x_position,
+                idx,
+                f"{value:.1f}%",
+                va="center",
+                ha=ha,
+                fontsize=10.0,
+                color="#224d38",
+                clip_on=True,
+            )
 
         style_axis(ax_growth)
         ax_growth.plot(years, future_values, color="#1f6844", linewidth=3.0, label="GreenVest strategy")
@@ -1855,6 +1869,7 @@ def build_summary_pdf_bytes(
         ax_growth.set_title("Future value outlook", fontsize=13.5, fontweight="bold", color="#163a2a", pad=12)
         ax_growth.set_xlabel("Years invested")
         ax_growth.set_ylabel("Projected value")
+        ax_growth.tick_params(axis="y", pad=4)
         ax_growth.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"GBP {x:,.0f}"))
         ax_growth.legend(
             loc="upper left",
