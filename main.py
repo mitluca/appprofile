@@ -3929,6 +3929,7 @@ def render_dashboard():
     g_w = st.session_state.g_w
 
     output_ready = st.session_state.get("generated_snapshot") is not None
+    st.markdown('<div style="height:0.55rem;"></div>', unsafe_allow_html=True)
     utility_cols = st.columns([0.14, 0.24, 0.24, 0.22], gap="small")
     with utility_cols[0]:
         st.markdown(
