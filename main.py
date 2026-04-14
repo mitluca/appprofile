@@ -1697,9 +1697,9 @@ def build_future_value_chart(invest, opt_return, benchmark_return=None, selected
     ax.set_ylabel("Projected portfolio value")
     ax.set_title("Future Value Projection", fontsize=15, fontweight="bold", color="#163a2a", pad=14)
     ax.annotate(
-        f"GBP {opt_values[-1]:,.0f}",
+        f"GreenVest\nGBP {opt_values[-1]:,.0f}",
         xy=(years[-1], opt_values[-1]),
-        xytext=(-74, 16),
+        xytext=(-88, 18),
         textcoords="offset points",
         fontsize=9,
         color="#173b2b",
@@ -1707,9 +1707,9 @@ def build_future_value_chart(invest, opt_return, benchmark_return=None, selected
     )
     if benchmark_return is not None:
         ax.annotate(
-            f"GBP {benchmark_values[-1]:,.0f}",
+            f"50 / 50 mix\nGBP {benchmark_values[-1]:,.0f}",
             xy=(years[-1], benchmark_values[-1]),
-            xytext=(-70, -28),
+            xytext=(-92, -34),
             textcoords="offset points",
             fontsize=8.7,
             color="#235f9b",
@@ -2010,7 +2010,7 @@ def render_investor_charts_section(
         st.pyplot(future_fig)
         plt.close(future_fig)
         st.markdown(
-            '<div class="chart-caption">Projected values use the current assumptions from the builder on this page, so investors can compare scenarios instantly.</div>',
+            '<div class="chart-caption">The solid green line is the GreenVest recommendation. The dashed blue line is a simple 50 / 50 risky-mix reference, so investors can see what changes when sustainability preferences shape the allocation.</div>',
             unsafe_allow_html=True,
         )
 
@@ -2760,6 +2760,21 @@ def render_portfolio_output_panel(package: dict):
             5. Sector exclusions are enforced so blocked sectors cannot be recommended.
             """
         )
+
+    st.markdown(
+        """
+        <div class="spotlight-card">
+            <div class="section-kicker">What This Means</div>
+            <h3>How to read the comparison</h3>
+            <p>
+                GreenVest is the sustainability-aware recommendation based on your gamma, ESG preference, and exclusions.
+                The 50 / 50 risky-mix reference is a simpler benchmark that splits the risky sleeve evenly between the two assets.
+                The future value chart is there to show what that difference could mean over time under the current assumptions.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     if both_excluded:
         st.error(
